@@ -1,0 +1,57 @@
+.grammar-sidebar,
+.grammar-sidebar2 {
+  width: 50%;
+  top: 45px;
+  bottom: 0;
+  padding-bottom: 2rem;
+  padding-top: 2rem;
+}
+
+.grammar-sidebar h2,
+.grammar-sidebar2 h2 {
+  color: white;
+  background-color: #0c4e00;
+  padding-left: 10%;
+  padding-top: 0.4em;
+  padding-bottom: 0.4em;
+  margin-top: 0;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 1.7em;
+}
+
+.grammar-sidebar form,
+.grammar-sidebar2 form {
+  color: black;
+  padding-left: 15%;
+  margin-bottom: 2%;
+}
+
+body {
+  background-color: #bdbdbd;
+}
+
+h1 {
+  margin: 0;
+  padding: 2%;
+  text-decoration: underline;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 2.5em;
+  background-color: #585858;
+  color: white;
+}
+
+.grammar-sidebar,
+.grammar-sidebar2 {
+  float: left;
+}
+
+#eq {
+  margin-left: 46%;
+  margin-bottom: 15px;
+}
+
+.eqP {
+  text-align: center;
+}

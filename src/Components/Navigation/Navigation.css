@@ -1,0 +1,26 @@
+.navbar {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
+  box-shadow: 0 4px 12px 0 rgba(160, 201, 215, 0.5);
+  transition: box-shadow 0.25s;
+}
+
+.navitem {
+  float: left;
+}
+
+.nav-link {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  background-color: yellow;
+  color: black;
+}

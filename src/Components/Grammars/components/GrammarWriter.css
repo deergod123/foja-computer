@@ -1,0 +1,19 @@
+.grammarwriter{
+  width:65%;
+  float:left;
+  text-align: center;
+  background-color:#0C4E00;
+  margin-left: 17.5%;
+  color: white;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+.legend{
+  background-color: #585858;
+  color:white;
+  clear:both;
+  text-align: center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
