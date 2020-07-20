@@ -12,6 +12,7 @@ struct Symbol
 	Symbol* next;
 };
 
+
 class Word
 {
 private:
@@ -21,6 +22,7 @@ public:
 	Word();
 	Word(Symbol* s);
 	Word(int id);
+	Word(string repr);
 	void conc(Word* suf, bool cloned=true);
 	Word* split(Symbol* where);
 	void insert(Symbol* where, Word* what, bool cloned=true);
@@ -34,5 +36,17 @@ public:
 	bool isEmpty();
 	string toString();
 
+};
+
+class WordSet
+{
+private:
+	set<Word*> words;
+public:
+	set<Word*> getSet();
+	bool contains(Word* w);
+	void insert(Word* w);
+	WordSet();
+	WordSet(set<Word*> words, bool wrap=true);
 };
 #endif

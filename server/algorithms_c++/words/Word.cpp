@@ -37,6 +37,138 @@ Word::Word(int id) //single character from id
 	this->start=s;
 	this->end=s;
 }
+
+Word::Word(string repr) //from string
+{
+	if(repr==EPSSTR)
+	{
+		this->start=NULL;
+		this->end=NULL;
+		return;
+	}
+	bool high_read=false; //reading a high symbol
+	bool high_terminate=false; //can terminate high read
+	bool high_terminal=false; //reading high terminal/nonterminal
+	stringstream high_stream; //stream for symbol id
+	high_stream.clear();
+	Symbol* outw=NULL;
+	Symbol* prev=NULL;
+	for(int i=0;i<repr.length();i++)
+	{
+		if(high_read)
+		{
+			if(high_terminate)
+			{
+				if(repr[i]==')')
+				{
+					string high_string=high_stream.str();
+					if(!high_string.length())
+					{
+						cout<<"invalid high symbol format, empty id"<<endl;
+						exit(1);
+					}
+					int id;
+					high_stream >> id;
+					id*=(high_terminal ? 1 : -1);
+					Symbol* s=new Symbol();
+					s->id=id;
+					s->prev=prev;
+					s->next=NULL;
+					if(prev!=NULL)
+					{
+						prev->next=s;
+					}
+					if(outw==NULL)
+					{
+						outw=s;
+					}
+					prev=s;
+					high_read=false;
+					high_terminate=false;
+					high_stream.clear();
+					continue;
+				}
+				if(repr[i]>='0' && repr[i]<='9')
+				{
+					high_stream << repr[i];
+					continue;
+				}
+				cout<< "invalid high symbol format, not a number id"<<endl;
+				exit(1);
+			}
+			if(repr[i]=='N')
+			{
+				high_terminal=false;
+				high_terminate=true;
+				continue;
+			}
+			if(repr[i]=='T')
+			{
+				high_terminal=true;
+				high_terminate=true;
+				continue;
+			}
+			cout<< "invalid high symbol format, missing T/N"<<endl;
+			exit(1);
+		}
+		if(repr[i]=='(')
+		{
+			high_read=true;
+				continue;
+		}
+		if(repr[i]>='A' && repr[i]<='Z')
+		{
+			int id = (1+(int)repr[i]-(int)'A')*-1;
+			Symbol* s=new Symbol();
+			s->id=id;
+			s->prev=prev;
+			s->next=NULL;
+			if(prev!=NULL)
+			{
+				prev->next=s;
+			}
+			if(outw==NULL)
+			{
+				outw=s;
+			}
+			prev=s;
+			continue;
+		}
+		if(repr[i]>='a' && repr[i]<='z')
+		{
+			int id = (1+(int)repr[i]-(int)'a');
+			Symbol* s=new Symbol();
+			s->id=id;
+			s->prev=prev;
+			s->next=NULL;
+			if(prev!=NULL)
+			{
+				prev->next=s;
+			}
+			if(outw==NULL)
+			{
+				outw=s;
+			}
+			prev=s;
+			continue;
+		}
+		cout<<"invalid word format, unknown symbol '"<<repr[i]<<"'"<<endl;
+		exit(1);
+	}
+	if(high_read)
+	{
+		cout<<"unfinished high read"<<endl;
+		exit(1);
+	}
+	if(outw==NULL)
+	{
+		cout<<"invalid epsilon representation, use "<<EPSSTR<<"."<<endl;
+		exit(1);
+	}
+	this->start=outw;
+	this->end=prev;
+
+}
 ///////////
 
 void Word::conc(Word* suf, bool cloned) //add suffix to word
@@ -221,10 +353,15 @@ bool Word::equal(Word* w2)
 		{
 			return (s2==NULL);
 		}
+		if(s2==NULL)
+		{
+			return false;
+		}
 		if(s->id!=s2->id)
 		{
 			return false;
 		}
+		s2=s2->next;
 	}
 }
 
@@ -317,3 +454,51 @@ string Word::toString()
 	return ss.str();
 }
 
+
+
+
+
+
+
+WordSet::WordSet()
+{
+
+}
+
+WordSet::WordSet(set<Word*> words, bool wrap)
+{
+	if(wrap)
+	{
+		this->words=words;
+	}
+	else
+	{
+		this->words.insert(words.begin(),words.end());
+	}
+}
+
+set<Word*> WordSet::getSet()
+{
+	return this->words;
+}
+
+bool WordSet::contains(Word* w)
+{
+	for(auto ww:this->words)
+	{
+		if(ww->equal(w))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void WordSet::insert(Word* w)
+{
+	if(this->contains(w))
+	{
+		return;
+	}
+	this->words.insert(w);
+}

@@ -19,7 +19,6 @@ protected:
     bool reduce(stack<char> &stackOfChars, PrecedentialRelation *precedentialRelation, const string &word, const int &pointerOnCurrentChar, vector<string> &commands);
     bool shiftAndReduceAnalyzed(stack<char> &stackOfChars, const string &word, int &pointerOnCurrentChar);
     void printCommands(vector<string> commands) const;
-
 public:
     SyntaxAnalyzer(Grammar *grammar);
     vector<string> shiftAndReduce(string word);

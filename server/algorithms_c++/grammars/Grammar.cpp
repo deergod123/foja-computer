@@ -1,5 +1,5 @@
 #include "Grammar.h"
-//#include "../relations/PrecedentialRelation.h"
+#include "../relations/PrecedentialRelation.h"
 #include "../words/Word.h"
 
 
@@ -62,7 +62,7 @@ Grammar::Grammar(set<int> n,set<int> t,set<pair<int,Word*>> p, int s)
 }
 //
 
-/*
+
 Grammar::Grammar(string stringGrammar)
 {
     stringstream stringGrammarStream(stringGrammar);
@@ -77,107 +77,266 @@ Grammar::Grammar(string stringGrammar)
     stringstream nonterminalsStream(grammar[0]);
     while (getline(nonterminalsStream, segment, ','))
     {
-        this->nonterminals.insert(segment[0]);
+	Word* w=new Word(segment);
+	Symbol* s=w->getStart();
+        this->nonterminals.insert(s->id);
     }
 
     stringstream terminalsStream(grammar[1]);
     while (getline(terminalsStream, segment, ','))
     {
-        this->terminals.insert(segment[0]);
-    }
+	Word* w=new Word(segment);
+//cout<<"1"<<endl;
+	Symbol* s=w->getStart();
+        this->terminals.insert(s->id);
 
-    this->start = grammar[2][0];
+    }
+    Word* w=new Word(string(1,grammar[2][0]));
+//cout<<"2"<<endl;
+	Symbol* s=w->getStart();
+
+    this->start = s->id;
 
     stringstream rulesStream(grammar[3]);
-    pair<string, string> rule;
-    rule.first = epsilon;
-    rule.second = epsilon;
+    pair<int, Word*> rule;
+    rule.first = 0;
+    rule.second = new Word();
     while (getline(rulesStream, segment, ','))
     {
-        if (rule.first == epsilon)
+        if (rule.first == 0)
         {
-            rule.first = segment;
+            //rule.first = segment;
+		if(segment.size()==1)
+		{
+			if(segment[0]>='A' && segment[0]<='Z')
+			{
+				rule.first=(1+(int)segment[0]-(int)'A')*-1;
+				continue;
+			}
+			cout<<"Rule from terminal?"<<endl;
+			exit(1);
+		}
+		if(segment.size()==0)
+		{
+			cout<<"Rule from empty string?"<<endl;
+			exit(1);
+		}
+		if(!(segment[0]=='(' && segment[1]=='N' && segment.back()==')'))
+		{
+			cout<<"Rule from invalid symbol"<<endl;
+			exit(1);
+		}
+		string str=segment.erase(0,2);
+		str.pop_back();
+		int id;
+		stringstream idstream(str);
+		idstream >> id;
+		rule.first=id*-1;
+		continue;
         }
-        else
-        {
-            rule.second = segment;
-            if (rule.second == substitutedEpsilon)
-                rule.second = epsilon;
-            this->rules.insert(rule);
-            rule.first = epsilon;
-            rule.second = epsilon;
-        }
+	rule.second = new Word(segment);
+        //if (rule.second == substitutedEpsilon)
+        //	rule.second = epsilon;
+        this->rules.insert(rule);
+        rule.first = 0;
+        rule.second = new Word();
     }
 }
 
+string Grammar::grammarToString()
+{
+	stringstream sg;
+	for(int n:this->nonterminals)
+	{
+		Word* w=new Word(n);
+		sg<< w->toString()<<",";
+	}
+	sg.unget();
+	sg<<"|";
+        for(int n:this->terminals)
+        {
+                Word* w=new Word(n);
+                sg<< w->toString()<<",";
+        }
+	sg.unget();
+	sg<<"|";
+	Word* w=new Word(this->start);
+	sg<< w->toString()<<"|";
+	for(auto rule:this->rules)
+	{
+		w=new Word(rule.first);
+		sg<< w->toString()<<",";
+		sg<< rule.second->toString();
+		sg<<",";
+	}
+	sg.unget();
+	return sg.str();
+
+}
+
+
+
+
+pair<bool,bool> Grammar::patchNonterminals()
+{
+	pair<bool,bool> o;
+	o.first=false; //added nonterminals
+	o.second=false; //removed nonterminals
+	for(auto rule:this->rules)
+	{
+		if(rule.first<0)
+			o.first=o.first || (this->nonterminals.insert(rule.first).second);
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
+		{
+			if(s->id<0)
+				o.first=o.first ||(this->nonterminals.insert(s->id).second);
+		}
+	}
+	//
+	for(int n:this->nonterminals)
+	{
+		bool remove=true;
+		for(auto rule:this->rules)
+		{
+			if(n==rule.first)
+			{
+				remove=false;
+				break;
+			}
+			for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
+			{
+				if(n==s->id)
+				{
+					remove=false;
+					break;
+				}
+			}
+			if(!remove)
+				break;
+		}
+		if(remove)
+		{
+			o.second=true;
+			this->nonterminals.erase(n);
+		}
+	}
+	return o;
+}
+
+bool Grammar::removeDupedRules()
+{
+	//cout<<"removing dupes"<<endl;
+	bool o=false;
+	set<pair<int,Word*>> newrules;
+	for(auto n:this->nonterminals)
+	{
+		//Word* w=new Word(n);
+		//cout<<"Nonterminal "<< w->toString()<<endl<<"------------------------"<<endl;
+		set<pair<int,Word*>> newrulesn;
+		for(auto rule:this->getRulesFromNonterminal(n))
+		{
+			//this->printr(rule);
+			bool add=true;
+			for(auto newrule:newrulesn)
+			{
+				//cout<<"	";
+				//this->printr(newrule);
+				if(rule.second->equal(newrule.second))
+				{
+					//cout<<"Dupe found"<<endl;
+					add=false;
+					o=true;
+					break;
+				}
+			}
+			if(add)
+			{
+				//cout<<"adding"<<endl;
+				newrules.insert(rule);
+				newrulesn.insert(rule);
+			}
+		}
+	}
+	this->rules.clear();
+	this->rules.insert(newrules.begin(), newrules.end());
+	return o;
+}
+
+
+
+
+//no idea how this works, I just rewrote it and added a patchNonterminals @ the end
+//TODO add comments, format
 void Grammar::toReducedNormalForm()
 {
+
+	//A->A
     for (auto rule : this->rules)
-        if ((rule.second!=NULL)&&(rule.second.getStart()!=NULL)&&(rule.first == rule.second.getStart()->id ) && (rule.second.getStart()->next == NULL))
+        if ((rule.second!=NULL)&&(!rule.second->isEmpty())&&(rule.first == rule.second->getStart()->id ) && (rule.second->getStart()->next == NULL))
             this->rules.erase(rule);
+
+	//
+
+//cout<<"1";
 
     set<int> terminatedNonterminals;
 
-    while (true)
+	bool cont=true;
+    while (cont)
     {
-        bool end = true;
+	cont=false;
         for (auto rule : this->rules)
         {
             bool terminatedRule = true;
             //
-			for (unsigned int i = 0; i < rule.second.length(); i++)
-            {
-                if ((terminatedNonterminals.count(rule.second[i]) == 0) && (this->terminals.count(rule.second[i]) == 0))
-                {
-                    terminatedRule = false;
-                    break;
-                }
-            }
-			//
-			for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
+		{
+			if((terminatedNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
 			{
-				if((terminatedNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
-				{
-					terminatedRule=false;
-					break;
-				}
+				terminatedRule=false;
+				break;
 			}
-			//
+		}
+		//
             if ((terminatedRule) && (terminatedNonterminals.count(rule.first) == 0))
             {
                 terminatedNonterminals.insert(rule.first);
-                end = false;
+		cont=true;
             }
         }
-        if (end)
-            break;
     }
+
+//cout<<"2";
     for (auto rule : this->rules)
+
     {
         if (terminatedNonterminals.count(rule.first) == 0)
         {
             this->rules.erase(rule);
             continue;
         }
-		/
+		/*
         for (unsigned int i = 0; i < rule.second.length(); i++)
             if ((terminatedNonterminals.count(rule.second[i]) == 0) && (this->terminals.count(rule.second[i]) == 0))
             {
                 this->rules.erase(rule);
                 break;
             }
-		/
-		for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+		*/
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 		{
-			if((terminatedNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
+			//if((terminatedNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
+			if((s->id<0)&&(terminatedNonterminals.count(s ->id)==0))
 			{
 				this->rules.erase(rule);
 				break;
 			}
 		}
     }
+
     terminatedNonterminals.clear();
 
+//cout<<"3";
     set<int> achievableNonterminals;
     achievableNonterminals.insert(this->start);
     queue<int> q;
@@ -190,7 +349,7 @@ void Grammar::toReducedNormalForm()
         {
             if (rule.first == word)
             {
-				/
+				/*
                 for (unsigned int i = 0; i < rule.second.length(); i++)
                 {
                     if ((achievableNonterminals.count(rule.second[i]) == 0) && (this->terminals.count(rule.second[i]) == 0))
@@ -199,19 +358,20 @@ void Grammar::toReducedNormalForm()
                         q.push(rule.second[i]);
                     }
                 }
-				/
-				for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+				*/
+			for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
+			{
+				//if((achievableNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
+				if((s->id<0) && (achievableNonterminals.count(s->id)==0))
 				{
-					if((achievableNonterminals.count(s->id)==0) && (this->terminals.count(s->id)==0))
-					{
-						achievableNonterminals.insert(s->id);
-						q.push(s->id);
-					}
+					achievableNonterminals.insert(s->id);
+					q.push(s->id);
 				}
+			}
             }
         }
     }
-
+//cout<<"4";
     for (auto rule : this->rules)
     {
         if (achievableNonterminals.count(rule.first) == 0)
@@ -219,25 +379,28 @@ void Grammar::toReducedNormalForm()
             this->rules.erase(rule);
             continue;
         }
-		/
+		/*
         for (unsigned int i = 0; i < rule.second.length(); i++)
             if ((achievableNonterminals.count(rule.second[i]) == 0) && (this->terminals.count(rule.second[i]) == 0))
             {
                 this->rules.erase(rule);
                 break;
             }
-		/
-		for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+		*/
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 		{
-			if((achievableNonterminals.count(s->id)==0)&&(this->terminals.count(s->id)==0))
+			//if((achievableNonterminals.count(s->id)==0)&&(this->terminals.count(s->id)==0))
+			if((s->id<0) && (achievableNonterminals.count(s->id)==0))
 			{
-				this->rules.erase(rule):
+				this->rules.erase(rule);
 				break;
 			}
 		}
     }
 
-    achievableNonterminals.clear();
+    achievableNonterminals.clear(); //why?
+	this->patchNonterminals();
+	this->removeDupedRules();
 }
 
 
@@ -249,23 +412,28 @@ void Grammar::toReducedNormalForm()
 
 
 
-
-
+/*
+no idea how exactly this works, just reworked it
+overengineered, ugly
+TODO comment
+can't be bothered to rework this completely
+commented blocks are old code for reference
+*/
 void Grammar::toEpsilonFreeForm()
 {
     set<int> removableNonterminals;
     for (auto rule : this->rules)
-        if (rule.second.isEmpty())
-            removableNonterminals.insert(rule.first->id);
+        if (rule.second->isEmpty())
+            removableNonterminals.insert(rule.first);
 
     //finding out removable rules
-    while (true)
+    while (true) //why not while(!end)???????? also there is a break? what is this?
     {
         bool end = true;
         for (auto rule : this->rules)
         {
-            bool removableRule = true;
-			/
+            bool removableRule = true; //isn't this unnecessary? breaks after this is changed anyway?
+			/*
             for (unsigned int i = 0; i < rule.second.length(); i++)
             {
                 if (removableNonterminals.count(rule.second[i]) == 0)
@@ -274,8 +442,8 @@ void Grammar::toEpsilonFreeForm()
                     break;
                 }
             }
-			/
-			for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+			*/
+			for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 			{
 				if(removableNonterminals.count(s->id)==0)
 				{
@@ -289,6 +457,7 @@ void Grammar::toEpsilonFreeForm()
                 end = false;
             }
         }
+	//W	H	Y	?
         if (end)
             break;
     }
@@ -298,17 +467,17 @@ void Grammar::toEpsilonFreeForm()
 
     for (auto rule : this->rules)
     {
-        string combination = "";
-		/
+        string combination = ""; //why is this a string?
+		/*
         for (unsigned int i = 0; i < rule.second.length(); i++)
             if (removableNonterminals.count(rule.second[i]) != 0)
                 combination += "0";
-		/
-		for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+		*/
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 		{
 			if(removableNonterminals.count(s->id)!=0)
 			{
-				combination+=0;
+				combination+="0";
 			}
 		}
         if (combination == "")
@@ -316,9 +485,9 @@ void Grammar::toEpsilonFreeForm()
 
         while (count(combination.begin(), combination.end(), '1') != combination.length())
         {
-            Word* newRule = new Word();
+            Word* newrule = new Word();
             int removableNonterminal = 0;
-			/
+			/*
             for (unsigned int i = 0; i < rule.second.length(); i++)
             {
                 if (removableNonterminals.count(rule.second[i]) != 0)
@@ -330,28 +499,36 @@ void Grammar::toEpsilonFreeForm()
                 else
                     newRule += rule.second[i];
             }
-			/
-			for(Symbol* s=rule.second.getStart();s!=NULL;s=s->next)
+			*/
+			for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 			{
 				if(removableNonterminals.count(s->id)!=0)
 				{
 					if(combination[removableNonterminal]=='1')
 					{
+						/*
 						Symbol* ss=new Symbol();
 							ss->prev=NULL;
 							ss->next=NULL;
 							ss->id=s->id;
 						newrule.conc(new Word(ss),false);
+						//updated for id constructor
+						*/
+						newrule->conc(new Word(s->id),false);
 					}
 					removableNonterminal++;
 				}
 				else
 				{
+					/*
 					Symbol* ss=new Symbol();
 						ss->prev=NULL;
 						ss->next=NULL;
 						ss->id=s->id;
 					newrule.conc(new Word(ss),false);
+					//updated
+					*/
+					newrule->conc(new Word(s->id),false);
 				}
 			}
             for (int i = combination.length() - 1; i >= 0; i--)
@@ -363,19 +540,21 @@ void Grammar::toEpsilonFreeForm()
 
             pair<int, Word*> newRulePair;
             newRulePair.first = rule.first;
-            newRulePair.second = newRule;
+            newRulePair.second = newrule;
             newRules.insert(newRulePair);
         }
     }
 
     //inserting new rules
-    for (auto newRule : newRules)
+    for (auto newRule : newRules) //why like this?
         this->rules.insert(newRule);
 
     //erasing epsilon rules
     for (auto rule : this->rules)
-        if (rule.second.isEmpty())
+        if (rule.second->isEmpty())
             this->rules.erase(rule);
+
+	this->removeDupedRules();
 }
 
 
@@ -384,12 +563,12 @@ void Grammar::toEpsilonFreeForm()
 int Grammar::countOfTerminals(Word* w)
 {
     int count = 0;
-	/
+	/*
 	for (unsigned int i = 0; i < word.length(); i++)
         if ((((int)word[i]) >= 97) && (((int)word[i]) <= 122))
             count++;
-    /
-	for(Symbol* s=w.getStart();s!=NULL;s=s->next)
+    */
+	for(Symbol* s=w->getStart();s!=NULL;s=s->next)
 	{
 		count+= (s->id>0 ? 1:0);
 	}
@@ -414,28 +593,37 @@ int Grammar::minimum(queue<pair<Word*, int>> &queue)
     return minimum;
 }
 
-int Grammar::minimum(set<Word*> words)
+int Grammar::minimum(WordSet* words)
 {
     int minimum = 0, i = 0;
-    for (auto word : words)
+    for (auto word : words->getSet())
     {
         if (i == 0)
         {
-            minimum = word.length();
+            minimum = word->length();
             i++;
         }
-        else if (minimum > word.length())
-            minimum = word.length();
+        else if (minimum > word->length())
+            minimum = word->length();
     }
     return minimum;
 }
+
+
+
+
+
+
+
+
 
 string Grammar::isEquivalent(Grammar *grammar)
 {
     int maxMemory = 0;
     int reachedSize = 0;
     queue<pair<Word*, int>> thisQueue, grammarQueue;
-    set<Word*> thisWords, grammarWords;
+    WordSet* thisWords;
+WordSet*  grammarWords;
     pair<Word*, int> start;
 
     start.first = new Word(this->start);
@@ -459,16 +647,16 @@ string Grammar::isEquivalent(Grammar *grammar)
             int grammarMinimum = grammarQueue.size() == 0 ? this->minimum(grammarWords) : this->minimum(grammarQueue);
 
             reachedSize = max(reachedSize, min(thisMinimum, grammarMinimum));
-            for (auto word : thisWords)
+            for (auto word : thisWords->getSet())
             {
-                if ((word.length() < min(thisMinimum, grammarMinimum)) && (grammarWords.count(word) == 0))
-                    return word.isEmpty() ? "Epsilon|0" : word.toString() + "|0";
+                if ((word->length() < min(thisMinimum, grammarMinimum)) && (grammarWords->contains(word) == 0))
+                    return word->toString() + "|0";
             }
 
-            for (auto word : grammarWords)
+            for (auto word : grammarWords->getSet())
             {
-                if ((word.length() < min(thisMinimum, grammarMinimum)) && (thisWords.count(word) == 0))
-                    return word.isEmpty() ? "Epsilon|0" : word.toString() + "|0";
+                if ((word->length() < min(thisMinimum, grammarMinimum)) && (thisWords->contains(word) == 0))
+                    return word->toString() + "|0";
             }
         }
 
@@ -479,7 +667,7 @@ string Grammar::isEquivalent(Grammar *grammar)
             thisQueue.pop();
         }
 
-        maxMemory -= thisWord.first.length();
+        maxMemory -= thisWord.first->length();
 
         pair<Word*, int> grammarWord;
         if (!grammarQueue.empty())
@@ -488,34 +676,9 @@ string Grammar::isEquivalent(Grammar *grammar)
             grammarQueue.pop();
         }
 
-        maxMemory -= grammarWord.first.length();
-		/
-        for (unsigned int j = 0; j < thisWord.first.length(); j++)
-        {
-            if ((int)thisWord.first[j] > 90)
-                continue;
-            for (auto rule : this->rules)
-            {
-                if (rule.first == string(1, thisWord.first[j]))
-                {
-                    pair<string, int> newPair = thisWord;
-                    newPair.first.erase(j, 1);
-                    newPair.first.insert(j, rule.second);
-                    newPair.second += this->countOfTerminals(rule.second);
+        maxMemory -= grammarWord.first->length();
 
-                    if (newPair.second == newPair.first.length())
-                        thisWords.insert(newPair.first);
-                    else
-                        thisQueue.push(newPair);
-                    if (maxMemory + newPair.first.length() > 50000000)
-                        return to_string(reachedSize) + "|1";
-                    else
-                        maxMemory += newPair.first.length();
-                }
-            }
-        }
-		TODO/
-		
+	/*
         for (unsigned int j = 0; j < grammarWord.first.length(); j++)
         {
             if ((int)grammarWord.first[j] > 90)
@@ -540,11 +703,40 @@ string Grammar::isEquivalent(Grammar *grammar)
                 }
             }
         }
+	*/
+	for(Symbol* s=grammarWord.first->getStart();s!=NULL;s=s->next)
+	{
+		if(s->id>0)
+		{
+			continue;
+		}
+		for(auto rule: grammar->rules)
+		{
+			if(rule.first == s->id)
+			{
+				pair<Word*, int> newPair= grammarWord;
+				newPair.first=newPair.first->clone();
+
+				newPair.first->replace(s, rule.second);
+				newPair.second+= grammar->countOfTerminals(rule.second);
+
+				if(newPair.second == newPair.first->length())
+					grammarWords->insert(newPair.first);
+				else
+					grammarQueue.push(newPair);
+
+				if(maxMemory +newPair.first->length() > 50000000)
+					return to_string(reachedSize) + "|1";
+				else
+					maxMemory+=newPair.first->length();
+			}
+		}
+	}
     }
 
     return to_string(reachedSize) + "|1";
 }
-
+/*
 string Grammar::grammarToString()
 {
     string stringGrammar = epsilon;
@@ -572,16 +764,16 @@ string Grammar::grammarToString()
     stringGrammar.pop_back();
     return stringGrammar;
 }
-
+*/
 bool Grammar::isPrecedential()
 {
     // there cant be the rule with epsilon
     for (auto rule : this->rules)
-        if (rule.second.isEmpty())
+        if (rule.second->isEmpty())
             return false;
 
     // there cant be more than one rules with the same right side
-    /
+    /*
 	map<string, int> amountOfRules;
     for (auto rule : this->rules)
     {
@@ -589,12 +781,12 @@ bool Grammar::isPrecedential()
         if (amountOfRules[rule.second] > 1)
             return false;
     }
-	/
+	*/
 	for(auto rule:this->rules)
 	{
 		for(auto rule2:this->rules)
 		{
-			if((rule!=rule2) && (rule.second.equal(rule2.second)))
+			if((rule!=rule2) && (rule.second->equal(rule2.second)))
 			{
 				return false;
 			}
@@ -614,7 +806,6 @@ string Grammar::getYourPrecedentialRelationString()
     delete precedentialRelation;
     return precedentialRelationString;
 }
-*/
 string Grammar::hello() const
 {
     return "hello world!";
@@ -720,9 +911,14 @@ void Grammar::removeLeftRecursion()
 
 void Grammar::toChomskyNormalForm()
 {
-	//
-	set<pair<int,Word*>> xitr;
+	/*find the highest nonterminal slot used
+	the next N will be used for creating new
+	stored as int nextnewnt
+
+	After a new N is created, nextnewnt-- */
+
 	int nextnewnt=-1;
+
 	for(int n:this->nonterminals)
 	{
 		if(n<=nextnewnt)
@@ -730,7 +926,11 @@ void Grammar::toChomskyNormalForm()
 			nextnewnt=n-1;
 		}
 	}
-//cout<<"xdrf"<<endl;
+
+	/*for each T create new rule N->T,
+	stored as xitr*/
+	set<pair<int,Word*>> xitr;
+
 	for(int t:this->terminals)
 	{
 		pair<int,Word*> nxitrp;
@@ -745,9 +945,12 @@ void Grammar::toChomskyNormalForm()
 		nxitrp.second=xitw;
 		xitr.insert(nxitrp);
 	}
-//cout<<"xdrf"<<endl;
-	
-	for(auto rule:this->rules) //swap terminals w/ new nt
+
+	/*swap terminals for their corresponding nonterminal
+	ignore N->T and N->eps, as they are valid rules anyway
+	*/
+
+	for(auto rule:this->rules)
 	{
 		Symbol* s=rule.second->getStart();
 		if(s==NULL) //N->eps
@@ -758,7 +961,7 @@ void Grammar::toChomskyNormalForm()
 		{
 			continue;
 		}
-		for(;s!=NULL;s=s->next)
+		for(;s!=NULL;s=s->next) //anything else
 		{
 			if(s->id>0)
 			{
@@ -773,28 +976,36 @@ void Grammar::toChomskyNormalForm()
 			}
 		}
 	}
-//cout<<"xdrf"<<endl;
-	
+
+	/*
+	create new rule N->eps and a word containing
+	only N in preparation for the next step
+	*/
+
 	pair<int,Word*> xieps; //N->eps
 	xieps.first=nextnewnt;
 	nextnewnt--;
 	this->nonterminals.insert(xieps.first);
 	xieps.second=new Word();
-	/*
-	Symbol* es=new Symbol();
-	es->prev=NULL;
-	es->next=NULL;
-	es->id=xieps.first;
+
+	//
+	//Symbol* es=new Symbol();
+	//es->prev=NULL;
+	//es->next=NULL;
+	//es->id=xieps.first;
 	//updated for id-specific constructor
-	*/
+
+
 	Word* xiepsw=new Word(xieps.first); //word containing only xi_eps (for conc)
+	/*
+	deconstruct rules with right side longer than 3 N
+	into a sequence of valid rules, store as seqr
+	*/
+
 	set<pair<int,Word*>> seqr;
-//cout<<"xdrf"<<endl;
 
 	for(auto rule:this->rules)
 	{
-		//cout<<"rule ";
-		//this->printr(rule);
 		if(rule.second->isEmpty()) //N->eps
 		{
 			seqr.insert(rule);
@@ -805,70 +1016,78 @@ void Grammar::toChomskyNormalForm()
 			seqr.insert(rule);
 			continue;
 		}
+
 		Symbol* s=rule.second->getStart();
-		if(s->next==NULL) //chain rules
+
+		assert(s->id <0); //we should not encounter Ts from here on
+
+		if(s->next==NULL) //N->N chain rules, xiepsw must be added
 		{
 			rule.second->conc(xiepsw,true);
 			seqr.insert(rule);
 			continue;
 		}
+
+		assert(s->next->id<0);
+
 		if(s->next->next==NULL) //N->NN
 		{
 			seqr.insert(rule);
 			continue;
 		}
-		//N->NNN+
-		int lastnt=rule.first;
-		for(Word* ww=rule.second; ; )
+		/*
+		this is where the actual deconstruction begins
+		*/
+
+		int lastnt=rule.first; //N used for splitting in the previous iteration
+		for(Word* ww=rule.second; ; ) //ww is the right side of the rule to be deconstructed
 		{
-	//cout<<"split"<<endl;
-			Word* suf=ww->split(ww->getStart());
-			pair<int,Word*> nseqrp;
+
+			assert(ww->getStart()<0);
+
+			Word* suf=ww->split(ww->getStart()); //separate the first character
+			pair<int,Word*> nseqrp; //new sequence rule
 			nseqrp.first=lastnt;
 			nseqrp.second=ww;
-			/*
-			Symbol* ss=new Symbol();
-			ss->prev=NULL;
-			ss->next=NULL;
-			ss->id=nextnewnt;
-			lastnt=nextnewnt;
-			nextnewnt--;
+			//Symbol* ss=new Symbol();
+			//ss->prev=NULL;
+			//ss->next=NULL;
+			//ss->id=nextnewnt;
+			//lastnt=nextnewnt;
+			//nextnewnt--;
 			//updated
-			*/
-			this->nonterminals.insert(lastnt);
-	//cout<<"conc"<<endl;
-			ww->conc(new Word(nextnewnt),false);
-			lastnt=nextnewnt;
-			this->nonterminals.insert(lastnt);
+			ww->conc(new Word(nextnewnt),false); //add new N for splitting
+			this->nonterminals.insert(lastnt);   //add N to grammar
+			lastnt=nextnewnt; //update for next iteration
 			nextnewnt--;
-			//nseqrp.second=ww;
-			seqr.insert(nseqrp);
-	//cout<<"suf "<<suf ->toString() <<endl;
-			if(suf->length()==2)
+			seqr.insert(nseqrp); //add rule
+
+			assert(suf->length()>=2); //suffix should be at least 2 characters long, should break when it's 2
+			//iteration
+			if(suf->length()==2) //check whether suf is a valid right side -> break
 			{
-	//cout<<"break"<<endl;
-				pair<int,Word* > eseqrp;
+				assert(suf->getStart()<0);
+				assert(suf->getEnd()<0);
+
+				pair<int,Word* > eseqrp; //sequence end rule
 				eseqrp.first=lastnt;
 				eseqrp.second=suf;
-				//this->printr(eseqrp);
 				seqr.insert(eseqrp);
 				break;
 			}
-			if(suf->length()<2)
-			{
-				cout<<"something ain't right, suffix <2 characters "<<suf ->toString()<<endl;
-				exit(1);
-			}
-	//cout<<"recurse"<<endl;
-			ww=suf;
+			ww=suf; //continue on suffix
 		}
 	}
+
+	/*
+	inserting newly created rules
+	*/
+
 	this->rules.insert(xieps);
 	this->rules.insert(xitr.begin(),xitr.end());
 	this->rules.insert(seqr.begin(),seqr.end());
-//cout<<"xdrfinished"<<endl;
-	
-	//
+
+	this->removeDupedRules();
 }
 
 void Grammar::toGreibachNormalForm()
