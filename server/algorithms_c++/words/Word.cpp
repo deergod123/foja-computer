@@ -1,6 +1,17 @@
 #include "Word.h"
 using namespace std;
 
+
+wordcomp::wordcomp()
+{
+
+}
+
+bool wordcomp::operator() (Word* w1, Word* w2) const
+{
+	return ( (w1==w2) || (w1!=NULL && w1->equal(w2)) );
+}
+
 Word::Word() //eps
 {
 	this->start=NULL;
@@ -448,57 +459,33 @@ string Word::toString()
 			}
 			char c {64-i->id};
 			ss << c;
-			
 		}
 	}
 	return ss.str();
 }
 
-
-
-
-
-
-
-WordSet::WordSet()
+void Word::reverse()
 {
-
+	Symbol* ss=NULL;
+	for(Symbol* s=this->start;s!=NULL;s=s->prev)
+	{
+		ss=s->next;
+		s->next=s->prev;
+		s->prev=ss;
+	}
+	ss=this->start;
+	this->start=this->end;
+	this->end=ss;
 }
 
-WordSet::WordSet(set<Word*> words, bool wrap)
+void Word::insert(Symbol* where, Symbol* start, Symbol* end)
 {
-	if(wrap)
-	{
-		this->words=words;
-	}
-	else
-	{
-		this->words.insert(words.begin(),words.end());
-	}
-}
-
-set<Word*> WordSet::getSet()
-{
-	return this->words;
-}
-
-bool WordSet::contains(Word* w)
-{
-	for(auto ww:this->words)
-	{
-		if(ww->equal(w))
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-void WordSet::insert(Word* w)
-{
-	if(this->contains(w))
-	{
-		return;
-	}
-	this->words.insert(w);
+	Symbol* backupstart=start->prev;
+	Symbol* backupend=end->next;
+	start->prev=NULL;
+	end->next=NULL;
+	Word* insword=new Word(start);
+	this->insert(where,insword);
+	start->prev=backupstart;
+	end->next=backupend;
 }

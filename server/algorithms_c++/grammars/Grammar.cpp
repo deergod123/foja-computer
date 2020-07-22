@@ -3,6 +3,17 @@
 #include "../words/Word.h"
 
 
+
+rulecomp::rulecomp()
+{
+
+}
+
+bool rulecomp::operator() (rule_t r1, rule_t r2) const
+{
+	return (r1.first==r2.first) && ( (r1.second==NULL && r2.second==NULL) || (r1.second!=NULL && r1.second->equal(r2.second)) );
+}
+
 /////////////////////////////////////////////////////////////////
 set<int> Grammar::getNonterminals() const
 {
@@ -19,14 +30,14 @@ int Grammar::getStart() const
     return this->start;
 }
 
-set<pair<int, Word*>> Grammar::getRules() const
+ruleset_t Grammar::getRules() const
 {
     return this->rules;
 }
 ///////////////////////////
 ///////////////////////////
 
-Grammar::Grammar(set<int> n,set<int> t,set<pair<int,Word*>> p, int s)
+Grammar::Grammar(set<int> n,set<int> t,ruleset_t p, int s)
 {
 	/*
 	this->nonterminals=n;
@@ -50,7 +61,7 @@ Grammar::Grammar(set<int> n,set<int> t,set<pair<int,Word*>> p, int s)
 	//cout<<endl<<"terminals set"<<endl;
 	for(auto rule:p)
 	{
-		pair<int,Word*> rp;
+		rule_t rp;
 		//cout<<rule.first<<" -> ";
 		rp.first=rule.first;
 		//cout<<rule.second->toString()<<endl;
@@ -98,7 +109,7 @@ Grammar::Grammar(string stringGrammar)
     this->start = s->id;
 
     stringstream rulesStream(grammar[3]);
-    pair<int, Word*> rule;
+    rule_t rule;
     rule.first = 0;
     rule.second = new Word();
     while (getline(rulesStream, segment, ','))
@@ -227,12 +238,12 @@ bool Grammar::removeDupedRules()
 {
 	//cout<<"removing dupes"<<endl;
 	bool o=false;
-	set<pair<int,Word*>> newrules;
+	ruleset_t newrules;
 	for(auto n:this->nonterminals)
 	{
 		//Word* w=new Word(n);
 		//cout<<"Nonterminal "<< w->toString()<<endl<<"------------------------"<<endl;
-		set<pair<int,Word*>> newrulesn;
+		ruleset_t newrulesn;
 		for(auto rule:this->getRulesFromNonterminal(n))
 		{
 			//this->printr(rule);
@@ -463,7 +474,7 @@ void Grammar::toEpsilonFreeForm()
     }
 
     //computing new rules
-    set<pair<int, Word*>> newRules;
+    ruleset_t newRules;
 
     for (auto rule : this->rules)
     {
@@ -538,7 +549,7 @@ void Grammar::toEpsilonFreeForm()
                     break;
             }
 
-            pair<int, Word*> newRulePair;
+            rule_t newRulePair;
             newRulePair.first = rule.first;
             newRulePair.second = newrule;
             newRules.insert(newRulePair);
@@ -593,10 +604,10 @@ int Grammar::minimum(queue<pair<Word*, int>> &queue)
     return minimum;
 }
 
-int Grammar::minimum(WordSet* words)
+int Grammar::minimum(wordset_t words)
 {
     int minimum = 0, i = 0;
-    for (auto word : words->getSet())
+    for (auto word : words)
     {
         if (i == 0)
         {
@@ -622,8 +633,8 @@ string Grammar::isEquivalent(Grammar *grammar)
     int maxMemory = 0;
     int reachedSize = 0;
     queue<pair<Word*, int>> thisQueue, grammarQueue;
-    WordSet* thisWords;
-WordSet*  grammarWords;
+    wordset_t thisWords;
+wordset_t  grammarWords;
     pair<Word*, int> start;
 
     start.first = new Word(this->start);
@@ -647,15 +658,15 @@ WordSet*  grammarWords;
             int grammarMinimum = grammarQueue.size() == 0 ? this->minimum(grammarWords) : this->minimum(grammarQueue);
 
             reachedSize = max(reachedSize, min(thisMinimum, grammarMinimum));
-            for (auto word : thisWords->getSet())
+            for (auto word : thisWords)
             {
-                if ((word->length() < min(thisMinimum, grammarMinimum)) && (grammarWords->contains(word) == 0))
+                if ((word->length() < min(thisMinimum, grammarMinimum)) && (grammarWords.count(word) == 0))
                     return word->toString() + "|0";
             }
 
-            for (auto word : grammarWords->getSet())
+            for (auto word : grammarWords)
             {
-                if ((word->length() < min(thisMinimum, grammarMinimum)) && (thisWords->contains(word) == 0))
+                if ((word->length() < min(thisMinimum, grammarMinimum)) && (thisWords.count(word) == 0))
                     return word->toString() + "|0";
             }
         }
@@ -721,7 +732,7 @@ WordSet*  grammarWords;
 				newPair.second+= grammar->countOfTerminals(rule.second);
 
 				if(newPair.second == newPair.first->length())
-					grammarWords->insert(newPair.first);
+					grammarWords.insert(newPair.first);
 				else
 					grammarQueue.push(newPair);
 
@@ -821,18 +832,18 @@ string Grammar::hello() const
 
 
 
-set<pair<int,Word*>> Grammar::getRulesFromNonterminal(int nt)
+ruleset_t Grammar::getRulesFromNonterminal(int nt)
 {
 	if(!(this->nonterminals.count(nt)))
 	{
 		cout << "Grammar does not contain nonterminal id " << nt <<endl;
 	}
-	set<pair<int,Word*>> o;
+	ruleset_t o;
 	for(auto rule:this->rules)
 	{
 		if(rule.first==nt)
 		{
-			pair<int,Word*> np;
+			rule_t np;
 			np.first=rule.first;
 			np.second=rule.second;
 			o.insert(np);
@@ -928,12 +939,12 @@ void Grammar::toChomskyNormalForm()
 	}
 
 	/*for each T create new rule N->T,
-	stored as xitr*/
-	set<pair<int,Word*>> xitr;
+	stored as xitr */
+	ruleset_t xitr;
 
 	for(int t:this->terminals)
 	{
-		pair<int,Word*> nxitrp;
+		rule_t nxitrp;
 		nxitrp.first=nextnewnt;
 		nextnewnt--;
 		this->nonterminals.insert(nxitrp.first);
@@ -982,7 +993,7 @@ void Grammar::toChomskyNormalForm()
 	only N in preparation for the next step
 	*/
 
-	pair<int,Word*> xieps; //N->eps
+	rule_t xieps; //N->eps
 	xieps.first=nextnewnt;
 	nextnewnt--;
 	this->nonterminals.insert(xieps.first);
@@ -1002,7 +1013,7 @@ void Grammar::toChomskyNormalForm()
 	into a sequence of valid rules, store as seqr
 	*/
 
-	set<pair<int,Word*>> seqr;
+	ruleset_t seqr;
 
 	for(auto rule:this->rules)
 	{
@@ -1046,7 +1057,7 @@ void Grammar::toChomskyNormalForm()
 			assert(ww->getStart()<0);
 
 			Word* suf=ww->split(ww->getStart()); //separate the first character
-			pair<int,Word*> nseqrp; //new sequence rule
+			rule_t nseqrp; //new sequence rule
 			nseqrp.first=lastnt;
 			nseqrp.second=ww;
 			//Symbol* ss=new Symbol();
@@ -1123,7 +1134,7 @@ string Grammar::testprint()
 	for(auto nt:this->nonterminals)
 	{
 		Word* w=new Word(nt);
-		set<pair<int,Word*>> nr=this->getRulesFromNonterminal(nt);
+		ruleset_t nr=this->getRulesFromNonterminal(nt);
 		if(nr.empty())
 		{
 			continue;
@@ -1146,7 +1157,7 @@ string Grammar::testprint()
 	return ss.str();
 }
 
-void Grammar::printr(pair<int,Word*> r)
+void Grammar::printr(rule_t r)
 {
 	if(r.second==NULL)
 	{

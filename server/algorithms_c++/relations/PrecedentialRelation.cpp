@@ -62,7 +62,7 @@ set<pair<int, int>> PrecedentialRelation::transitiveClosure(set<pair<int, int>> 
 {
 
     set<int> nonterminals = grammar->getNonterminals();
-    set<pair<int, Word*>> rules = grammar->getRules();
+    ruleset_t rules = grammar->getRules();
     map<pair<int, int>, bool> usedElements;
     queue<pair<int, int>> chars;
     for (auto element : relation)

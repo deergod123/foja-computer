@@ -5,6 +5,9 @@
 using namespace std;
 #define NOSYMBOL 0
 #define EPSSTR "<EPS>"
+#define wordset_t set<Word*, wordcomp>
+
+
 struct Symbol
 {
 	int id;
@@ -26,7 +29,9 @@ public:
 	void conc(Word* suf, bool cloned=true);
 	Word* split(Symbol* where);
 	void insert(Symbol* where, Word* what, bool cloned=true);
+	void insert(Symbol* where, Symbol* start, Symbol* end);
 	void replace(Symbol* which, Word* what, bool cloned=true); //<-
+	void reverse();
 	bool equal(Word* w2);
 	//Word* clone(Symbol* s=NULL, Symbol* e=NULL);
 	Word* clone();
@@ -38,15 +43,20 @@ public:
 
 };
 
-class WordSet
+class wordcomp
 {
-private:
-	set<Word*> words;
 public:
-	set<Word*> getSet();
-	bool contains(Word* w);
-	void insert(Word* w);
-	WordSet();
-	WordSet(set<Word*> words, bool wrap=true);
+	wordcomp();
+	bool operator() (Word* w1, Word* w2) const;
 };
+
+
+/*
+auto wordcomp = [](Word* w1, Word* w2)
+{
+	return w1->equal(w2);
+};
+*/
+
+
 #endif
