@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import ReducedFormButton from "./Buttons/ReducedFormButton";
 import EpsilonFreeButton from "./Buttons/EpsilonFreeButton";
+import ChomskyButton from "./Buttons/ChomskyButton";
 
 import "./InputGrammarForms.css";
 
@@ -37,25 +38,88 @@ class InputGrammarForms extends Component {
   };
 
   badLetterProblemTerminals = word => {
-    if (word.length !== 1) return true;
+    if (word.length === 0) return true;
+    if (word.length >1)
+    {
+	if(word.charAt(0)!=="(" || word.charAt(1)!=="T" || word.charAt(word.length -1) !==")")
+		return true;
+	for(let i=0;i <= word.length-1;i++)
+	{
+		if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
+			return true;
+	}
+	return false;
+    }
     return word.charCodeAt(0) < 97 || word.charCodeAt(0) > 122;
   };
 
   badLetterProblemNonterminals = word => {
-    if (word.length !== 1) return true;
+    if (word.length === 0) return true;
+    if (word.length >1)
+    {
+	if(word.charAt(0)!=="(" || word.charAt(1)!=="N" || word.charAt(word.length -1) !==")")
+		return true;
+	for(let i=0;i <= word.length-1;i++)
+	{
+		if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
+			return true;
+	}
+	return false;
+    }
     return word.charCodeAt(0) < 65 || word.charCodeAt(0) > 90;
   };
 
   badRuleWord = (word, nonterminalsSet, terminalsSet) => {
-    for (let letter of word) {
-      if (!nonterminalsSet.includes(letter) && !terminalsSet.includes(letter))
-        return true;
-    }
+	let high_read=false;
+	let high_terminate=false;
+	let high_check="";
+	for(let i=0;i<word.length;i++)
+	{
+		if(word.charAt(i) === "(")
+		{
+			if(high_read)
+				return true;
+			high_read=true;
+			high_terminate=false;
+			high_check+="(";
+			continue;
+		}
+		if(word.charAt(i) === ")")
+		{
+			if(!high_terminate)
+				return true;
+			high_read=false;
+			high_check+=")";
+			if(!(nonterminalsSet.includes(high_check)  || terminalsSet.includes(high_check)))
+				return true;
+			high_check="";
+			continue;
+		}
+		if(high_read)
+		{
+			if(high_terminate)
+			{
+				if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
+					return true;
+				high_check+=word.charAt(i);
+				continue;
+			}
+			if(!(word.charAt(i)==="N" || word.charAt(i)==="T"))
+				return true;
+			high_check+=word.charAt(i);
+			continue;
+		}
+		if(!(nonterminalsSet.includes(word.charAt(i)) || terminalsSet.includes(word.charAt(i))))
+			return true;
+	}
+
+
+
     return false;
   };
 
   isEpsilon = word => {
-    return word.length === 0;
+    return (word.length === 0 || word==="<EPS>");
   };
 
   readInput = () => {

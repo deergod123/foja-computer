@@ -8,6 +8,12 @@ router.post("/grammarRequest/reducedNormalForm", (req, res) => {
   res.send(cecko.execute("reducedNormalForm", grammar));
 });
 
+router.post("/grammarRequest/ChomskyNormalForm", (req, res) => {
+  const { grammar } = req.body;
+  res.send(cecko.execute("ChomskyNormalForm", grammar));
+});
+
+
 router.post("/grammarRequest/epsilonFreeForm", (req, res) => {
   const { grammar } = req.body;
   res.send(cecko.execute("epsilonFreeForm", grammar));
