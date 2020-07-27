@@ -14,6 +14,7 @@ auto rulecomp= [](rule_t r1, rule_t r2)
 };
 */
 
+class PrecedentialRelation;
 
 class rulecomp
 {
@@ -22,7 +23,6 @@ public:
 	bool operator() (rule_t r1, rule_t r2) const;
 };
 
-class PrecedentialRelation;
 
 class Grammar
 {
@@ -47,7 +47,7 @@ public:
   string hello() const;
   ruleset_t getRulesFromNonterminal(int nt); //returns set of rules from given N
   pair<bool,bool> patchNonterminals(); //add used and missing N, remove present and unused N, returns pair<added,removed>
-  bool removeDupedRules(); //remove duplicate rules
+  //bool removeDupedRules(); //remove duplicate rules //deprecated, replaced by ruleset_t and rulecomp
   //void removeLeftRecursion();
   void toChomskyNormalForm();
   void toReducedNormalForm();

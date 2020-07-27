@@ -5,6 +5,7 @@
 using namespace std;
 #define NOSYMBOL 0
 #define EPSSTR "<EPS>"
+#define EPSSUB "*"
 #define wordset_t set<Word*, wordcomp>
 
 
@@ -33,6 +34,7 @@ public:
 	void replace(Symbol* which, Word* what, bool cloned=true); //<-
 	void reverse();
 	bool equal(Word* w2);
+	bool less(Word* w2);
 	//Word* clone(Symbol* s=NULL, Symbol* e=NULL);
 	Word* clone();
 	int length();

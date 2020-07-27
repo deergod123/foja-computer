@@ -75,6 +75,23 @@ export const toReducedNormalForm = (grammar, setGrammar) => dispatch => {
     });
 };
 
+export const toChomskyNormalForm = (grammar, setGrammar) => dispatch => {
+  const data = {
+    grammar: grammar
+  };
+
+  return apiRequest(`grammarRequest/ChomskyNormalForm`, {
+    method: "POST",
+    body: data
+  })
+    .then(result => {
+      dispatch(setGrammar(stringToGrammar(result)));
+    })
+    .catch(e => {
+      throw e;
+    });
+};
+
 export const toEpsilonFreeForm = (grammar, setGrammar) => dispatch => {
   const data = {
     grammar: grammar

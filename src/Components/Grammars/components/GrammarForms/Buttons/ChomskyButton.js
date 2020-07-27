@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { grammarToString } from "../../Utils/GrammarParser";
-import { toEpsilonFreeForm } from "../../../../Actions/actions";
+import { toChomskyNormalForm } from "../../../../Actions/actions";
 import { connect } from "react-redux";
 
 class ChomskyButton extends Component {
@@ -18,5 +18,5 @@ class ChomskyButton extends Component {
 
 export default connect(
   state => ({}),
-  { toEpsilonFreeForm }
-)(EpsilonFreeButton);
+  { toChomskyNormalForm }
+)(ChomskyButton);

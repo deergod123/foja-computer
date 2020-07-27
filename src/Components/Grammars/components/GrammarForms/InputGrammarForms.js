@@ -38,16 +38,21 @@ class InputGrammarForms extends Component {
   };
 
   badLetterProblemTerminals = word => {
+
     if (word.length === 0) return true;
     if (word.length >1)
     {
-	if(word.charAt(0)!=="(" || word.charAt(1)!=="T" || word.charAt(word.length -1) !==")")
+
+	if(word.charAt(0)!=`(` || word.charAt(1)!=`T` || word.charAt(word.length -1) !=`)`)
 		return true;
-	for(let i=0;i <= word.length-1;i++)
+	for(let i=2;i <= word.length-2;i++)
 	{
 		if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
 			return true;
 	}
+
+
+
 	return false;
     }
     return word.charCodeAt(0) < 97 || word.charCodeAt(0) > 122;
@@ -57,60 +62,91 @@ class InputGrammarForms extends Component {
     if (word.length === 0) return true;
     if (word.length >1)
     {
-	if(word.charAt(0)!=="(" || word.charAt(1)!=="N" || word.charAt(word.length -1) !==")")
+	if(word.charAt(0)!=`(` || word.charAt(1)!=`N` || word.charAt(word.length -1) !=`)`)
 		return true;
-	for(let i=0;i <= word.length-1;i++)
+	for(let i=2;i <= word.length-2;i++)
 	{
 		if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
 			return true;
 	}
+
 	return false;
     }
     return word.charCodeAt(0) < 65 || word.charCodeAt(0) > 90;
   };
 
   badRuleWord = (word, nonterminalsSet, terminalsSet) => {
+	console.log("checking "+word)
 	let high_read=false;
 	let high_terminate=false;
+	let high_nums=false
 	let high_check="";
 	for(let i=0;i<word.length;i++)
 	{
+		console.log(i);
 		if(word.charAt(i) === "(")
 		{
+			console.log("started high read");
 			if(high_read)
+			{
+				console.log("nested high read!!");
 				return true;
+			}
 			high_read=true;
 			high_terminate=false;
-			high_check+="(";
+			high_check="(";
 			continue;
 		}
 		if(word.charAt(i) === ")")
 		{
+			console.log("ending high read");
 			if(!high_terminate)
+			{
+				console.log("cannot end high read!!");
 				return true;
+			}
 			high_read=false;
+			high_nums=false;
 			high_check+=")";
 			if(!(nonterminalsSet.includes(high_check)  || terminalsSet.includes(high_check)))
+			{
+				console.log("check failed for \""+high_check+"\"!!");
 				return true;
+			}
 			high_check="";
 			continue;
 		}
 		if(high_read)
 		{
-			if(high_terminate)
+			console.log("in high read");
+			if(high_nums)
 			{
+				console.log("reading id");
 				if(word.charCodeAt(i) < 48 || word.charCodeAt(i) > 57)
+				{
+					console.log("id not a number!!");
 					return true;
+				}
 				high_check+=word.charAt(i);
+				high_terminate=true;
 				continue;
 			}
+			console.log("N or T");
 			if(!(word.charAt(i)==="N" || word.charAt(i)==="T"))
+			{
+				console.log("Not N or T!!");
 				return true;
+			}
 			high_check+=word.charAt(i);
+			high_nums=true;
 			continue;
 		}
+		console.log("low read");
 		if(!(nonterminalsSet.includes(word.charAt(i)) || terminalsSet.includes(word.charAt(i))))
+		{
+			console.log("check failed for "+word.charAt(i)+"!!");
 			return true;
+		}
 	}
 
 
@@ -138,7 +174,7 @@ class InputGrammarForms extends Component {
     const nonterminals = this.state.nonterminals.split(",");
     const terminals = this.state.terminals.split(",");
     const start = this.state.start;
-    const rules = this.state.rules.split(/['->', '\n']/);
+    const rules = this.state.rules.split('\n');
 
     const nonterminalsSet = [];
     for (let letter of nonterminals) {
@@ -165,7 +201,28 @@ class InputGrammarForms extends Component {
     const rulesSet = [];
 
     let nonterminal;
+	console.log(rules)
     for (let i = 0; i < rules.length; i += 1) {
+	let rulesLine=rules[i].split("->");
+	console.log("rl"+i);
+	console.log(rulesLine);
+          if (
+            this.badLetterProblemNonterminals(rulesLine[0]) ||
+            !nonterminalsSet.includes(rulesLine[0])
+          ) {
+            this.handleInputMessageChange("Bad left part of the rule!");
+            return;
+          }
+          nonterminal = rulesLine[0];
+          for (let word of rulesLine[1].split("|")) {
+            if (this.badRuleWord(word, nonterminalsSet, terminalsSet)) {
+              this.handleInputMessageChange("Bad right part of the rule!");
+              return;
+            }
+            rulesSet.push([nonterminal, word]);
+          }
+
+	/*
       switch (i % 3) {
         case 0:
           if (
@@ -195,6 +252,7 @@ class InputGrammarForms extends Component {
         default:
           break;
       }
+	*/
     }
 
     this.props.setGrammar({
@@ -283,6 +341,14 @@ class InputGrammarForms extends Component {
             setGrammar={this.props.setGrammar}
           />
         )}
+	<br />
+        {this.props.grammar != null && (
+          <ChomskyButton
+            grammar={this.props.grammar}
+            setGrammar={this.props.setGrammar}
+          />
+        )}
+
         {this.state.inputMessage !== "" && <h3>{this.state.inputMessage}</h3>}
       </form>
     );

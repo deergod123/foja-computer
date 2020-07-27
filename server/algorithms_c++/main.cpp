@@ -36,12 +36,13 @@ void Execute(const FunctionCallbackInfo<Value> &args)
     string grammarString(*str);
 
     Grammar *grammar = new Grammar(grammarString);
-
+	cout<<"running RNF"<<endl;
     grammar->toReducedNormalForm();
     string result = grammar->grammarToString();
-    delete grammar;
-
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()));
+   cout<<grammar->testprint()<<endl;
+	 delete grammar;
+	cout<<"result: "<<result<<endl;
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
   }
   else if (function == "epsilonFreeForm")
   {
@@ -49,12 +50,15 @@ void Execute(const FunctionCallbackInfo<Value> &args)
     string grammarString(*str);
 
     Grammar *grammar = new Grammar(grammarString);
-
+	cout<<"running EFF"<<endl;
     grammar->toEpsilonFreeForm();
     string result = grammar->grammarToString();
-    delete grammar;
+   cout<<grammar->testprint()<<endl;
 
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()));
+    delete grammar;
+	cout<<"result: "<<result<<endl;
+
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
   }
   else if (function == "equivalence")
   {
@@ -65,11 +69,13 @@ void Execute(const FunctionCallbackInfo<Value> &args)
     Grammar *grammar1 = new Grammar(grammarString1);
     Grammar *grammar2 = new Grammar(grammarString2);
 
+	cout<<"running isEquivalent"<<endl;
     string isEquivalent = grammar1->isEquivalent(grammar2);
+	cout<<"result: "<<isEquivalent<<endl;
 
     delete grammar1;
     delete grammar2;
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, isEquivalent.c_str()));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, isEquivalent.c_str()).ToLocalChecked());
   }
   else if (function == "isPrecedential")
   {
@@ -77,7 +83,7 @@ void Execute(const FunctionCallbackInfo<Value> &args)
     string grammarString(*str);
     Grammar *grammar = new Grammar(grammarString);
     PrecedentialRelation *precedentialRelation = new PrecedentialRelation(grammar);
-
+	cout<<"running isPrecedential"<<endl;
     string result = "";
     bool isPrecedential = grammar->isPrecedential();
 
@@ -90,7 +96,7 @@ void Execute(const FunctionCallbackInfo<Value> &args)
     {
       delete grammar;
       delete precedentialRelation;
-      args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()));
+      args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
       return;
     }
 
@@ -98,8 +104,9 @@ void Execute(const FunctionCallbackInfo<Value> &args)
 
     delete grammar;
     delete precedentialRelation;
+	cout<<"result: "<<result<<endl;
 
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
   }
   else if (function == "getWordSyntaxAnalysis")
   {
@@ -109,17 +116,39 @@ void Execute(const FunctionCallbackInfo<Value> &args)
 
     String::Utf8Value str2(isolate, args[2]);
     string word(*str2);
-
+	cout<<"running syntax analyzer"<<endl;
     SyntaxAnalyzer *syntaxAnalyzer = new SyntaxAnalyzer(grammar);
-    string syntaxAnalysis = syntaxAnalyzer->getShiftAndReduceString(syntaxAnalyzer->shiftAndReduce(word));
+    string syntaxAnalysis = syntaxAnalyzer->getShiftAndReduceString(syntaxAnalyzer->shiftAndReduce(new Word(word)));
 
     delete grammar;
     delete syntaxAnalyzer;
+	cout<<"result: "<<syntaxAnalysis<<endl;
 
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, syntaxAnalysis.c_str()));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, syntaxAnalysis.c_str()).ToLocalChecked());
   }
+  else if (function == "ChomskyNormalForm")
+  {
+    String::Utf8Value str(isolate, args[1]);
+    string grammarString(*str);
+
+    Grammar *grammar = new Grammar(grammarString);
+   cout<<grammar->testprint()<<endl;
+
+	cout<<"running CNF"<<endl;
+    grammar->toChomskyNormalForm();
+   cout<<grammar->testprint()<<endl;
+
+    string result = grammar->grammarToString();
+    delete grammar;
+	cout<<"result: "<<result<<endl;
+
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
+  }
+
+
   else
   {
+	cout<<"undefined function"<<endl;
     args.GetReturnValue().Set(String::NewFromUtf8(
                                   isolate, "Undefined function", NewStringType::kNormal)
                                   .ToLocalChecked());

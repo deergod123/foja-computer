@@ -9,7 +9,15 @@ wordcomp::wordcomp()
 
 bool wordcomp::operator() (Word* w1, Word* w2) const
 {
-	return ( (w1==w2) || (w1!=NULL && w1->equal(w2)) );
+	if(w1==w2)
+	{
+		return true;
+	}
+	if(w1==NULL)
+	{
+		return false;
+	}
+	return w1->less(w2);
 }
 
 Word::Word() //eps
@@ -51,7 +59,8 @@ Word::Word(int id) //single character from id
 
 Word::Word(string repr) //from string
 {
-	if(repr==EPSSTR)
+	cout<<"Constructing word from "<<repr<<endl;
+	if(repr==EPSSTR || repr==EPSSUB)
 	{
 		this->start=NULL;
 		this->end=NULL;
@@ -232,7 +241,7 @@ Word* Word::split(Symbol* where) //split after this symbol, create new word from
 	return w;
 }
 
-void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after this symbol, if null and eps defaults to start
+void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after this symbol, null defaults to start
 //used word is no longer usable if not cloned
 {
 	if(what==NULL)
@@ -262,8 +271,10 @@ void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after thi
 	}
 	if(where==NULL)
 	{
-		cout << "inserting on null into a non-empty word"<<endl;
-		exit(1);
+		Symbol* ss=this->start;
+		this->start=what->getStart();
+		what->getEnd()->next=ss;
+		ss->prev=what->getEnd();
 	}
 	if(where==this->start)
 	{
@@ -357,7 +368,19 @@ void Word::replace(Symbol* which, Word* what, bool cloned)
 
 bool Word::equal(Word* w2)
 {
+	if(w2==NULL)
+		return false;
+	if(w2==this)
+	{
+		cout<<"got this"<<endl;
+		return true;
+	}
 	Symbol* s2=w2->getStart();
+	if(s2==this->start)
+	{
+		cout<<"equal start"<<endl;
+		return true;
+	}
 	for(Symbol* s=this->start;;s=s->next)
 	{
 		if(s==NULL)
@@ -371,6 +394,47 @@ bool Word::equal(Word* w2)
 		if(s->id!=s2->id)
 		{
 			return false;
+		}
+		s2=s2->next;
+	}
+}
+
+bool Word::less(Word* w2)
+{
+	if(w2==NULL)
+		return true;
+	if(w2==this)
+	{
+		cout<<"got this"<<endl;
+		return false;
+	}
+	Symbol* s2=w2->getStart();
+	if(s2==this->start)
+	{
+		cout<<"equal start"<<endl;
+		return false;
+	}
+	for(Symbol* s=this->start;;s=s->next)
+	{
+		if(s==NULL)
+		{
+			return !(s2==NULL); //w2 is longer
+		}
+		if(s2==NULL)
+		{
+			return false; //w2 is shorter
+		}
+		if(s->id!=s2->id) //different symbol
+		{
+			if(s->id<0 && s2->id>0)
+			{
+				return true; //N<T
+			}
+			if(s->id>0 && s2->id<0)
+			{
+				return false;
+			}
+			return abs(s->id)< abs(s2->id);
 		}
 		s2=s2->next;
 	}
