@@ -677,7 +677,7 @@ int Grammar::minimum(wordset_t words)
 
 
 
-
+/*
 string Grammar::isEquivalent(Grammar *grammar)
 {
     int maxMemory = 0;
@@ -750,7 +750,7 @@ cout<<"iter"<<i<<endl;
 
         maxMemory -= grammarWord.first->length();
 
-	/*
+	/
         for (unsigned int j = 0; j < grammarWord.first.length(); j++)
         {
             if ((int)grammarWord.first[j] > 90)
@@ -775,7 +775,7 @@ cout<<"iter"<<i<<endl;
                 }
             }
         }
-	*/
+	/
 cout<<grammarWord.first ->toString()<<endl;
 	for(Symbol* s=grammarWord.first->getStart();s!=NULL;s=s->next)
 	{
@@ -818,6 +818,155 @@ cout<<grammarWord.first ->toString()<<endl;
 
     return to_string(reachedSize) + "|1";
 }
+*/
+
+string Grammar::isEquivalent(Grammar* other)
+{
+	this->toGreibachNormalForm();
+	other->toGreibachNormalForm();
+	int memory=0;
+	const int maxmemory=50000000;
+	wordset_t thisgen;
+	wordset_t thisterm;
+	wordset_t othergen;
+	wordset_t otherterm;
+	thisgen.insert(new Word(this->start));
+	othergen.insert(new Word(other->start));
+	memory=2;
+	if(!this->rules.count(rule_t(this->start,new Word())) ^ !other->rules.count(rule_t(other->start,new Word())))
+	{
+		return "<EPS>|0";
+	}
+	int size=0;
+	for(;thisgen.size() && othergen.size();size++)
+	{
+		wordset_t thisnewgen;
+		for(auto w:thisgen)
+		{
+			for(Symbol* s=w->getStart();s!=NULL;s=s->next)
+			{
+				if(s->id<0)
+				{
+					for(auto rule:this->getRulesFromNonterminal(s->id))
+					{
+						if(rule.second->isEmpty())
+						{
+							continue;
+						}
+						memory+=rule.second->length();
+						if(memory > maxmemory)
+						{
+							return to_string(size)+"|1";
+						}
+						Symbol* sp=s->prev;
+						Symbol* sn=s->next;
+						w->replace(s,rule.second);
+						Word* ww=w->clone();
+						if(sp!=NULL)
+						{
+							sp->next=s;
+							s->prev=sp;
+						}
+						else
+						{
+							s->next=NULL;
+							w->insert(NULL,new Word(s),false);
+							s->prev=NULL;
+						}
+						if(sn!=NULL)
+						{
+							sn->prev=s;
+							s->next=sn;
+						}
+						else
+						{
+							s->next=NULL;
+							w->insert(w->getEnd(),new Word(s),false);
+							if(rule.second->getStart()->next == NULL)
+							{
+								thisterm.insert(ww);
+								continue;
+							}
+						}
+						thisnewgen.insert(ww);
+					}
+					break;
+				}
+			}
+		}
+		thisgen=thisnewgen;
+
+		wordset_t othernewgen;
+		for(auto w:othergen)
+		{
+			for(Symbol* s=w->getStart();s!=NULL;s=s->next)
+			{
+				if(s->id<0)
+				{
+					for(auto rule:other->getRulesFromNonterminal(s->id))
+					{
+						if(rule.second->isEmpty())
+						{
+							continue;
+						}
+						memory+=rule.second->length();
+						if(memory > maxmemory)
+						{
+							return to_string(size)+"|1";
+						}
+						Symbol* sp=s->prev;
+						Symbol* sn=s->next;
+						w->replace(s,rule.second);
+						Word* ww=w->clone();
+
+						if(sp!=NULL)
+						{
+							sp->next=s;
+							s->prev=sp;
+						}
+						else
+						{
+							s->next=NULL;
+							w->insert(NULL,new Word(s),false);
+							s->prev=NULL;
+						}
+						if(sn!=NULL)
+						{
+							sn->prev=s;
+							s->next=sn;
+						}
+						else
+						{
+							s->next=NULL;
+							w->insert(w->getEnd(),new Word(s),false);
+							if(rule.second->getStart()->next == NULL)
+							{
+								otherterm.insert(ww);
+								continue;
+							}
+						}
+						othernewgen.insert(ww);
+					}
+					break;
+				}
+			}
+		}
+		othergen=othernewgen;
+
+		for(auto w:thisterm)
+		{
+			if(!otherterm.count(w))
+			{
+				return w->toString()+"|0";
+			}
+			memory-=(w->length() *2);
+		}
+		thisterm.clear();
+		otherterm.clear();
+	}
+	return to_string(size)+"|1";
+}
+
 /*
 string Grammar::grammarToString()
 {
@@ -1197,6 +1346,7 @@ void Grammar::toChomskyNormalForm()
 		}
 
 	//this->removeDupedRules(); //depr
+	this->toReducedNormalForm(); //remove byproducts
 }
 
 void Grammar::toGreibachNormalForm()
@@ -1209,13 +1359,20 @@ void Grammar::toGreibachNormalForm()
 			nextnewnt=i-1;
 		}
 	}
-	rule_t xisr; //for replacing S on the right side\
+cout<<"xis"<<endl;
 	int xis=nextnewnt;
+	this->nonterminals.insert(xis);
 	nextnewnt--;
-	xisr.first=xis;
-	xisr.second=new Word(this->start);
+	ruleset_t xisr;
 	for(auto rule:this->rules)
 	{
+		if(rule.first==this->start)
+		{
+			if(!rule.second->isEmpty())
+			{
+				xisr.insert(rule_t(xis, rule.second->clone()));
+			}
+		}
 		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
 		{
 			if(s->id==this->start)
@@ -1224,7 +1381,11 @@ void Grammar::toGreibachNormalForm()
 			}
 		}
 	}
-	this->rules.insert(xisr);
+	for(auto rule:xisr)
+	{
+		this->rules.insert(rule);
+	}
+cout<<"epscheck"<<endl;
 	//check if <EPS> in L(G)
 	set<int> nullprod;
 	bool change=true;
@@ -1253,16 +1414,14 @@ void Grammar::toGreibachNormalForm()
 			}
 		}
 	}
+cout<<"eff"<<endl;
 	this->toEpsilonFreeForm();
-	if(nullprod.count(this->start))
-	{
-		rule_t ser; //S-><EPS>
-		ser.first=this->start;
-		ser.second=new Word();
-	}
 	//remove unit production
+cout<< this->testprint();
+cout<<"rmunit"<<endl;
 	while(true)
 	{
+		cout<<"-bap"<<endl;
 		bool hasunit=false;
 		map<int,ruleset_t> unitrules;
 		for(auto rule:this->rules)
@@ -1271,15 +1430,19 @@ void Grammar::toGreibachNormalForm()
 			{
 				if(rule.second->getStart()->id<0)
 				{
+					cout<<"---unit ";
+					this->printr(rule);
 					hasunit=true;
 					if(unitrules.count(rule.first))
 					{
-						unitrules.find(rule.first).second.insert(rule);
+						unitrules.find(rule.first)->second.insert(rule);
 						continue;
 					}
 					ruleset_t rrr;
 					rrr.insert(rule);
-					unitrules.insert(pair<int,ruleset_t>(rule.first,rule));
+					ruleset_t rs;
+					rs.insert(rule);
+					unitrules.insert(pair<int,ruleset_t>(rule.first,rs));
 				}
 			}
 		}
@@ -1287,15 +1450,19 @@ void Grammar::toGreibachNormalForm()
 		{
 			break;
 		}
+		cout<<"-rr"<<endl;
 		for(auto rr:unitrules)
 		{
 			for(auto rrr:rr.second)
 			{
-				this->rules.erase(rr);
+				cout<<"rmrule ";
+				this->printr(rrr);
+				this->rules.erase(rrr);
 			}
 		}
 		ruleset_t addedrules;
 		ruleset_t removedrules;
+		cout<<"-caddr"<<endl;
 		for(auto rule:this->rules)
 		{
 			ruleset_t caddrules;
@@ -1304,14 +1471,17 @@ void Grammar::toGreibachNormalForm()
 			{
 				if(unitrules.count(s->id))
 				{
+					cout<<"--unclear ";
+					this->printr(rule);
 					clear=false;
 					caddrules.insert(rule);
-					removedrules.insert(rule);
+					//removedrules.insert(rule);
 					break;
 				}
 			}
 			while(!clear)
 			{
+				cout<<"--bam"<<endl;
 				clear=true;
 				for(auto cr:caddrules)
 				{
@@ -1319,27 +1489,39 @@ void Grammar::toGreibachNormalForm()
 					{
 						if(unitrules.count(s->id))
 						{
-							Word* w =cr.second;
-							Symbol* sp=s->prev;
-							cr.second=w->clone();
+							cout<<"---hasunitrule ";
+							this->printr(cr);
+							//Word* w =cr.second;
+							//Symbol* sp=s->prev;
+							//cr.second=w->clone();
 							clear=false;
-							for(auto rr:unitrules.find(s->id).second)
+							int sid=s->id;
+							for(auto rr:unitrules.find(s->id)->second)
 							{
+								cout<<"---replacing ";
+								this->printr(rr);
 								rule_t nrule;
 								nrule.first=cr.first;
+								/*overkill
 								w->replace(s,rr.second);
 								nrule.second=w->clone();
 								if(sp!=NULL)
 								{
-									w->replace(sp->next,s);
+									w->replace(sp->next,new Word(s),false);
 								}
 								else
 								{
-									w->replace(w->getStart(),s);
+									w->replace(w->getStart(),new Word(s),false);
 								}
+								*/
+								s->id=rr.second->getStart()->id;
+								nrule.second=cr.second->clone();
+								cout<<"---adding ";
+								this->printr(nrule);
 								caddrules.insert(nrule);
 							}
-							caddrules.remove(cr);
+							s->id=sid;
+							caddrules.erase(cr);
 							break;
 						}
 					}
@@ -1356,17 +1538,185 @@ void Grammar::toGreibachNormalForm()
 		}
 		for(auto ar:addedrules)
 		{
+			cout<<"-addrule ";
+			this->printr(ar);
 			this->rules.insert(ar);
 		}
 		for(auto rr:removedrules)
 		{
+			cout<<"-rmrule ";
+			this->printr(rr);
 			this->rules.erase(rr);
 		}
 	}
+cout<<"rmleftrec"<<endl;
+cout<<this->testprint();
 ////////remove left recursion
+	vector<int> orderednonterminals(this->nonterminals.begin(),this->nonterminals.end());
+	sort(orderednonterminals.begin(),orderednonterminals.end(),greater<int>());
+	bool bigchanged=true;
+	while(bigchanged)
+	{
+		bigchanged=false;
+
+		for(int i=0;i<orderednonterminals.size();i++)
+		{
+			int n=orderednonterminals[i];
+			cout<<"-nt "<<n<<endl;
+			bool changed=true;
+			while(changed)
+			{
+				changed=false;
+				for(auto rule:this->getRulesFromNonterminal(n))
+				{
+					if(rule.second->isEmpty() || rule.second->getStart()->id >0)
+					{
+						continue;
+					}
+					if(rule.second->getStart()->id > n)
+					{
+						cout<<"---lesser ";
+						this->printr(rule);
+						changed=true;
+						bigchanged=true;
+						this->rules.erase(rule);
+						for(auto r2:this->getRulesFromNonterminal(rule.second->getStart()->id))
+						{
+							Word* w=rule.second->clone();
+							w->replace(w->getStart(),r2.second);
+							rule_t nr;
+							nr.first=n;
+							nr.second=w;
+							cout<<"----addrule ";
+							this->printr(nr);
+							this->rules.insert(nr);
+						}
+					}
+				}
+			}
+			//direct
+			cout<<"-direct"<<endl;
+			ruleset_t leftrec;
+			ruleset_t noleftrec;
+			for(auto rule:this->getRulesFromNonterminal(n))
+			{
+				if(rule.second->getStart()->id == n)
+				{
+					leftrec.insert(rule);
+					continue;
+				}
+				noleftrec.insert(rule);
+			}
+			if(leftrec.size()==0)
+			{
+				cout<<"-no direct left rec"<<endl;
+				continue;
+			}
+			bigchanged=true;
+			int n2=nextnewnt;
+			this->nonterminals.insert(n2);
+			orderednonterminals.push_back(n2);
+			nextnewnt--;
+			for(auto lr:leftrec)
+			{
+				this->rules.erase(lr);
+				Word* w=lr.second->clone();
+				w->replace(w->getStart(),new Word(),false);
+				rule_t nr1;
+				nr1.first=n2;
+				nr1.second=w;
+				w=w->clone();
+				w->conc(new Word(n2),false);
+				rule_t nr2;
+				nr2.first=n2;
+				nr2.second=w;
+				cout<<"--addrules ";
+				this->printr(nr1);
+				this->printr(nr2);
+				this->rules.insert(nr1);
+				this->rules.insert(nr2);
+			}
+			for(auto nlr:noleftrec)
+			{
+				Word* w=nlr.second->clone();
+				w->conc(new Word(n2),false);
+				rule_t nr;
+				nr.first=nlr.first;
+				nr.second=w;
+				cout<<"--addrule ";
+				this->printr(nr);
+				this->rules.insert(nr);
+			}
+		}
 
 
+	}
+	//tape
+cout<<"tape"<<endl;
+	for(auto rule:this->getRulesFromNonterminal(orderednonterminals[0]))
+	{
+		if(rule.second->isEmpty() || rule.second->getStart()->id >0)
+		{
+			continue;
+		}
+		this->rules.erase(rule);
+		for(auto rr:this->getRulesFromNonterminal(rule.second->getStart()->id))
+		{
+			Word* w=rule.second->clone();
+			w->replace(w->getStart(),rr.second);
+			rule_t nr;
+			nr.first=orderednonterminals[0];
+			nr.second=w;
+			cout<<"--addrule ";
+			this->printr(nr);
+			this->rules.insert(nr);
+		}
+	}
+cout<<"final"<<endl;
+	///////////finalizing
+	if(nullprod.count(this->start))
+	{
+		rule_t ser; //S-><EPS>
+		ser.first=this->start;
+		ser.second=new Word();
+	}
 
+	ruleset_t xitr;
+	for(auto t:this->terminals)
+	{
+		int nn=nextnewnt;
+		this->nonterminals.insert(nn);
+		nextnewnt--;
+		rule_t xitrp;
+		xitrp.first=nn;
+		xitrp.second=new Word(t);
+		xitr.insert(xitrp);
+		this->rules.insert(xitrp);
+	}
+	for(auto rule:this->rules)
+	{
+		bool first=true;
+		for(Symbol* s=rule.second->getStart();s!=NULL;s=s->next)
+		{
+			if(first)
+			{
+				first=false;
+				continue;
+			}
+			if(s->id>0)
+			{
+				for(auto xr:xitr)
+				{
+					if(xr.second->getStart()->id == s->id)
+					{
+						s->id=xr.first;
+						break;
+					}
+				}
+			}
+		}
+	}
+	this->toReducedNormalForm(); //RNF for removing any byproducts
 /*
 	////remove null production
 	set<int> nullprod; //Ns such that N->eps exists
@@ -1506,5 +1856,6 @@ void Grammar::printr(rule_t r)
 		cout<<r.first<<" -> NULL!"<<endl;
 		exit(1);
 	}
-	cout<<r.first<<" -> "<<r.second->toString()<<endl;
+	Word* w=new Word(r.first);
+	cout<<w->toString()<<" -> "<<r.second->toString()<<endl;
 }

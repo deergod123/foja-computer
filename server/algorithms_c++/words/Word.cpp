@@ -330,19 +330,11 @@ void Word::replace(Symbol* which, Word* what, bool cloned)
 		}
 		if(which->next==NULL)
 		{
-			this->end=NULL;
-		}
-		if(which->next!=NULL)
-		{
-			which->next->prev=which->prev;
+			this->end=which->prev;
 		}
 		else
 		{
-			this->end=which->prev;
-		}
-		if(which->prev==NULL)
-		{
-			this->start=NULL;
+			which->next->prev=which->prev;
 		}
 		return;
 	}
@@ -372,13 +364,13 @@ bool Word::equal(Word* w2)
 		return false;
 	if(w2==this)
 	{
-		cout<<"got this"<<endl;
+		//cout<<"got this"<<endl;
 		return true;
 	}
 	Symbol* s2=w2->getStart();
 	if(s2==this->start)
 	{
-		cout<<"equal start"<<endl;
+		//cout<<"equal start"<<endl;
 		return true;
 	}
 	for(Symbol* s=this->start;;s=s->next)

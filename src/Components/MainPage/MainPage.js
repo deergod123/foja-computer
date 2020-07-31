@@ -19,7 +19,7 @@ class MainPage extends Component {
         </div>
         <div className="mainpage-container-footer">
           <h2>
-            Developed by Erik Kučák for: FMFI UK{" "}
+            Developed by Erik Kučák, edited and extended by Dominik Jenča for: FMFI UK{" "}
             <img src={logo_uk} alt="logo_uk" />
           </h2>
         </div>
