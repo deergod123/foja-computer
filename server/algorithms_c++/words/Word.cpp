@@ -29,7 +29,6 @@ Word::Word() //eps
 Word::Word(Symbol* s) //non-eps
 {
 	this->start=s;
-	s->prev=NULL;
 	if(s==NULL) //check for eps
 	{
 		this->end=NULL;
@@ -44,7 +43,10 @@ Word::Word(Symbol* s) //non-eps
 				break;
 			}
 		}
+		s->prev=NULL;
+
 	}
+
 }
 
 Word::Word(int id) //single character from id
@@ -231,12 +233,17 @@ Word* Word::split(Symbol* where) //split after this symbol, create new word from
 {
 	if(where==NULL)
 	{
-		cout << "splitting on null or splitting epsilon" <<endl;
-		exit(1);
+		if(this->isEmpty())
+		{
+			return new Word();
+		}
+		Word* w=new Word(this->start);
+		this->start=NULL;
+		this->end=NULL;
+		return w;
 	}
 	Word* w=new Word(where->next);
 	this->end=where;
-	where->next->prev=NULL;
 	where->next=NULL;
 	return w;
 }
