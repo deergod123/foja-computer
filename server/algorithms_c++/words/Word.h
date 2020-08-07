@@ -30,10 +30,11 @@ public:
 	void conc(Word* suf, bool cloned=true);
 	Word* split(Symbol* where);
 	void insert(Symbol* where, Word* what, bool cloned=true);
-	void insert(Symbol* where, Symbol* start, Symbol* end);
+	void insert(Symbol* where, Symbol* start, Symbol* end, bool cloned=true);
 	void replace(Symbol* which, Word* what, bool cloned=true); //<-
 	void reverse();
 	bool equal(Word* w2);
+	bool contains(Symbol* s);
 	bool less(Word* w2);
 	//Word* clone(Symbol* s=NULL, Symbol* e=NULL);
 	Word* clone();

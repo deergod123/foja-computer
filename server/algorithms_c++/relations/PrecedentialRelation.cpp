@@ -145,25 +145,49 @@ bool PrecedentialRelation::atMostOneRelation() const
 string PrecedentialRelation::getPrecedentialRelationString() const
 {
     string stringPrecedentialRelation = "";
+    Word* w1;
+    Word* w2;
     for (auto element : this->lessRelation)
+    {
+	w1=new Word(element.first);
+	w2=new Word(element.second);
         stringPrecedentialRelation +=
-            static_cast<std::stringstream &>(std::stringstream() << element.first << "," << element.second << ";").str();
+            static_cast<std::stringstream &>(std::stringstream() << w1->toString() << "," << w2->toString() << ";").str();
+
+    }
 
     if (this->lessRelation.size() != 0)
         stringPrecedentialRelation.pop_back();
     stringPrecedentialRelation += "|";
 
     for (auto element : this->equalsRelation)
+    {
+	w1=new Word(element.first);
+	w2=new Word(element.second);
         stringPrecedentialRelation +=
-            static_cast<std::stringstream &>(std::stringstream() << element.first << "," << element.second << ";").str();
+            static_cast<std::stringstream &>(std::stringstream() << w1->toString() << "," << w2->toString() << ";").str();
+
+    }
+
+
+
 
     if (this->equalsRelation.size() != 0)
         stringPrecedentialRelation.pop_back();
     stringPrecedentialRelation += "|";
 
     for (auto element : this->moreRelation)
+    {
+	w1=new Word(element.first);
+	w2=new Word(element.second);
         stringPrecedentialRelation +=
-            static_cast<std::stringstream &>(std::stringstream() << element.first << "," << element.second << ";").str();
+            static_cast<std::stringstream &>(std::stringstream() << w1->toString() << "," << w2->toString() << ";").str();
+
+    }
+
+
+
+
 
     if (this->moreRelation.size() != 0)
         stringPrecedentialRelation.pop_back();

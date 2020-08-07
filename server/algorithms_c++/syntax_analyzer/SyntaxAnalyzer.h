@@ -21,7 +21,7 @@ struct Command
 {
 	int value;
 	Word* currentWord;
-	rule_t* reduceRule;
+	rule_t reduceRule;
 };
 
 class SyntaxAnalyzer

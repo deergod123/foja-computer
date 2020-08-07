@@ -8,6 +8,8 @@ SyntaxAnalyzer::SyntaxAnalyzer(Grammar *grammar)
 Word* SyntaxAnalyzer::getCurrentWord(stack<int> stk, Word* w, Symbol* currentSymbol) const
 {
     //string currentWord = "";
+	cout<<"running getCurrentWord"<<endl;
+	cout<<"w: "<<w->toString()<<" s: "<<(currentSymbol == NULL ? 0 : currentSymbol->id)<<" c: "<<w->contains(currentSymbol)<<endl;
 	Word* currentWord = new Word();
     while (stk.top() != BOTTOM_OF_STACK)
     {
@@ -16,7 +18,10 @@ Word* SyntaxAnalyzer::getCurrentWord(stack<int> stk, Word* w, Symbol* currentSym
         stk.pop();
     }
     //reverse(currentWord.begin(), currentWord.end());
+	cout<<"cw1: "<<currentWord->toString()<<endl;
 	currentWord->reverse();
+	cout<<"cw2: "<<currentWord->toString()<<endl;
+
 	/*
     while (currentSymbol != w->end;)
     {
@@ -26,8 +31,9 @@ Word* SyntaxAnalyzer::getCurrentWord(stack<int> stk, Word* w, Symbol* currentSym
         */
 	if(!(w->isEmpty()))
 	{
-		currentWord->insert(currentWord->getEnd(),currentSymbol,w->getEnd()->prev);
+		currentWord->insert(currentWord->getEnd(),currentSymbol,w->getEnd());
 	}
+	cout<<"cw: "<< currentWord->toString()<<endl;
     return currentWord;
 }
 
@@ -42,7 +48,6 @@ void SyntaxAnalyzer::shift(stack<int> &stk,Word* &w, Symbol** currentSymbol, vec
 	Command* cmd=new Command();
 	cmd->value=CMD_SHIFT;
 	cmd->currentWord=this->getCurrentWord(stk, w, *currentSymbol);
-	cmd->reduceRule=NULL;
 	commands.push_back(cmd);
 }
 
@@ -80,7 +85,8 @@ bool SyntaxAnalyzer::reduce(stack<int> &stk, PrecedentialRelation* &precedential
             Command* cmd=new Command();
 		cmd->value=CMD_REDUCE;
 		cmd->currentWord=this->getCurrentWord(stk,w,currentSymbol);
-		cmd->reduceRule=&rule;
+		cmd->reduceRule=rule;
+	    	commands.push_back(cmd);
 	    //reduce is executed so we cant stop and reject syntax analysis
             stop = false;
             break;
@@ -97,15 +103,16 @@ bool SyntaxAnalyzer::shiftAndReduceAnalyzed(stack<int> &stk, Symbol* &s)
 vector<Command*> SyntaxAnalyzer::shiftAndReduce(Word* w)
 {
     //initialization needed structures
-
+cout<<"running shiftAndReduce"<<endl;
     vector<Command*> commands;
+cout<<"building relation"<<endl;
     PrecedentialRelation *precedentialRelation = new PrecedentialRelation(this->grammar);
     if (!precedentialRelation->atMostOneRelation() || w->isEmpty())
     {
+	cout<<"REJECT"<<endl;
 	Command* cmd=new Command();
 	cmd->value=CMD_REJECT;
 	cmd->currentWord=NULL;
-	cmd->reduceRule=NULL;
         commands.push_back(cmd);
         return commands;
     }
@@ -118,24 +125,55 @@ vector<Command*> SyntaxAnalyzer::shiftAndReduce(Word* w)
     //executing of the algorithm
     while (!this->shiftAndReduceAnalyzed(stk, currentSymbol))
     {
-        pair<int, int> par = make_pair(stk.top(), currentSymbol->id);
+	//
+	cout<<"stack top: "<<stk.top()<<endl;
+	//
+	pair<int, int> par;
+        if(currentSymbol!=NULL)
+	{
+		par = make_pair(stk.top(), currentSymbol->id);
+		cout<<"current symbol: "<<currentSymbol -> id<<endl;
+	}
+	else
+	{
+		par = make_pair(stk.top(), NOSYMBOL);
+		cout<<"current symbol: 0"<<endl;
+	}
         bool stop = false;
 
         if (stk.top() == BOTTOM_OF_STACK)
+	{
+		cout<<"shift: stack bottom"<<endl;
             this->shift(stk, w, (&currentSymbol), commands);
-        else if (precedentialRelation->isInEqualsRelation(par))
-            this->shift(stk, w, (&currentSymbol), commands);
-        else if (precedentialRelation->isInLessRelation(par))
-            this->shift(stk, w, (&currentSymbol), commands);
-        else if (precedentialRelation->isInMoreRelation(par))
-            stop = this->reduce(stk, precedentialRelation, w, currentSymbol, commands);
-        else if (currentSymbol == NULL && stk.top() != BOTTOM_OF_STACK)
-            stop = this->reduce(stk, precedentialRelation, w, currentSymbol, commands);
-        else
+        }
+	else if (precedentialRelation->isInEqualsRelation(par))
+        {
+		cout<<"shift: equal"<<endl;
+	    this->shift(stk, w, (&currentSymbol), commands);
+        }
+	else if (precedentialRelation->isInLessRelation(par))
+        {
+		cout<<"shift: less"<<endl;
+	    this->shift(stk, w, (&currentSymbol), commands);
+        }
+	else if (precedentialRelation->isInMoreRelation(par))
+        {
+		cout<<"reduce: more"<<endl;
+	    stop = this->reduce(stk, precedentialRelation, w, currentSymbol, commands);
+        }
+	else if (currentSymbol == NULL && stk.top() != BOTTOM_OF_STACK)
+        {
+		cout<<"reduce: no symbol and non-empty stack"<<endl;
+	    stop = this->reduce(stk, precedentialRelation, w, currentSymbol, commands);
+        }
+	else
+	{
             break;
-
+	}
         if (stop)
-            break;
+        {
+	    break;
+	}
     }
 
     if (this->shiftAndReduceAnalyzed(stk, currentSymbol))
@@ -143,7 +181,6 @@ vector<Command*> SyntaxAnalyzer::shiftAndReduce(Word* w)
 		Command* cmd=new Command();
 		cmd->value=CMD_ACCEPT;
 		cmd->currentWord=NULL;
-		cmd->reduceRule=NULL;
        		commands.push_back(cmd);
     	}
 
@@ -153,7 +190,6 @@ vector<Command*> SyntaxAnalyzer::shiftAndReduce(Word* w)
 		Command* cmd=new Command();
 		cmd->value=CMD_REJECT;
 		cmd->currentWord=NULL;
-		cmd->reduceRule=NULL;
        		commands.push_back(cmd);
     	}
 
@@ -174,6 +210,7 @@ string SyntaxAnalyzer::getShiftAndReduceString(vector<Command*> commands, string
     return shiftAndReduceString;
 */
 	stringstream ss;
+	Word* w;
 	for(int i=0;i<commands.size();i++)
 	{
 		switch(commands[i]->value) {
@@ -187,7 +224,10 @@ string SyntaxAnalyzer::getShiftAndReduceString(vector<Command*> commands, string
 				ss<<"SHIFT Current word: "<< commands[i]->currentWord->toString();
 				break;
 			case CMD_REDUCE:
-				ss<<"REDUCE "<< commands[i]->reduceRule->second->toString() << " -> " << commands[i]->reduceRule->first;
+				cout<<"red"<<endl;
+				w=new Word(commands[i]->reduceRule.first);
+				ss<<"REDUCE "<< commands[i]->reduceRule.second->toString() << " -> " << w->toString();
+				cout<<"red2"<<endl;
 				ss<<" Current word: "<< commands[i]->currentWord->toString();
 				break;
 			default:

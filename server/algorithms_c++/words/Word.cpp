@@ -282,18 +282,13 @@ void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after thi
 		this->start=what->getStart();
 		what->getEnd()->next=ss;
 		ss->prev=what->getEnd();
-	}
-	if(where==this->start)
-	{
-		this->start->prev=w->getEnd();
-		this->start=w->getStart();
-		w->getEnd()->next=this->start;
 		return;
 	}
 	if(where==this->end)
 	{
-		this->end->next=w->getStart();
-		w->getStart()->prev=this->end;
+		cout<<"end"<<endl;
+		where->next=w->getStart();
+		w->getStart()->prev=where;
 		this->end=w->getEnd();
 		return;
 	}
@@ -541,14 +536,44 @@ void Word::reverse()
 	this->end=ss;
 }
 
-void Word::insert(Symbol* where, Symbol* start, Symbol* end)
+void Word::insert(Symbol* where, Symbol* start, Symbol* end, bool cloned)
 {
+	cout<<"t: "<<this->toString()<<endl;
+	if(start==NULL || end==NULL)
+	{
+		return;
+	}
 	Symbol* backupstart=start->prev;
 	Symbol* backupend=end->next;
 	start->prev=NULL;
 	end->next=NULL;
 	Word* insword=new Word(start);
+	cout<<"iw: "<<insword->toString()<<endl;
+	if(cloned)
+	{
+
+		insword=insword->clone();
+		start->prev=backupstart;
+		end->next=backupend;
+		cout<<"iwc: "<<insword->toString()<<this->contains(insword->getStart())<<endl;
+
+	}
 	this->insert(where,insword);
-	start->prev=backupstart;
-	end->next=backupend;
+	cout<<"ins: "<<this->toString()<<endl;
+}
+
+bool Word::contains(Symbol* s)
+{
+	if(this->isEmpty() && s==NULL)
+	{
+		return true;
+	}
+	for(Symbol* ss=this->start;ss!=NULL;ss=ss->next)
+	{
+		if(ss==s)
+		{
+			return true;
+		}
+	}
+	return false;
 }
