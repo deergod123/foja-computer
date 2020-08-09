@@ -86,7 +86,7 @@ Word::Word(string repr) //from string
 					string high_string=high_stream.str();
 					if(!high_string.length())
 					{
-						cout<<"invalid high symbol format, empty id"<<endl;
+						cerr<<"invalid high symbol format, empty id"<<endl;
 						exit(1);
 					}
 					int id;
@@ -115,7 +115,7 @@ Word::Word(string repr) //from string
 					high_stream << repr[i];
 					continue;
 				}
-				cout<< "invalid high symbol format, not a number id"<<endl;
+				cerr<< "invalid high symbol format, not a number id"<<endl;
 				exit(1);
 			}
 			if(repr[i]=='N')
@@ -130,7 +130,7 @@ Word::Word(string repr) //from string
 				high_terminate=true;
 				continue;
 			}
-			cout<< "invalid high symbol format, missing T/N"<<endl;
+			cerr<< "invalid high symbol format, missing T/N"<<endl;
 			exit(1);
 		}
 		if(repr[i]=='(')
@@ -174,17 +174,17 @@ Word::Word(string repr) //from string
 			prev=s;
 			continue;
 		}
-		cout<<"invalid word format, unknown symbol '"<<repr[i]<<"'"<<endl;
+		cerr<<"invalid word format, unknown symbol '"<<repr[i]<<"'"<<endl;
 		exit(1);
 	}
 	if(high_read)
 	{
-		cout<<"unfinished high read"<<endl;
+		cerr<<"unfinished high read"<<endl;
 		exit(1);
 	}
 	if(outw==NULL)
 	{
-		cout<<"invalid epsilon representation, use "<<EPSSTR<<"."<<endl;
+		cerr<<"invalid epsilon representation, use "<<EPSSTR<<" or "<<EPSSUB<<"."<<endl;
 		exit(1);
 	}
 	this->start=outw;
@@ -195,38 +195,30 @@ Word::Word(string repr) //from string
 
 void Word::conc(Word* suf, bool cloned) //add suffix to word
 {
+	
+	if(suf==NULL)
+	{
+		cerr<<"conc with NULL suffix"<<endl;
+		exit(1);
+	}
 	Word* w=suf;
 	if(cloned)
 	{
 		w=suf->clone();
 	}
-	//cout<<"cloned"<<endl;
-	if(suf==NULL)
+	if(this->isEmpty()) //eps
 	{
-		//cout<<"conc with suffix NULL"<<endl;
-		exit(1);
-	}
-	if(this->end==NULL) //eps
-	{
-		//cout<<"i am epsilon"<<endl;
 		this->start=w->getStart();
 		this->end=w->getEnd();
-		//cout<<"finished"<<endl;
 		return;
 	}
-	//cout<<"i am not epsilon!!"<<endl;
 	if(suf->isEmpty())
 	{
-		//cout<<"other is epsilon"<<endl<<"finished"<<endl;
 		return;
 	}
-	//cout<<"other is not epsilon"<<endl;
-	//cout<<(this ->end == NULL)<<endl;
 	this->end->next=w->getStart();
-	//cout<<"1"<<endl;
 	w->getStart()->prev=this->end;
 	this->end=w->getEnd();
-	//cout<<"finished"<<endl;
 }
 
 Word* Word::split(Symbol* where) //split after this symbol, create new word from suffix
@@ -253,12 +245,12 @@ void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after thi
 {
 	if(what==NULL)
 	{
-		cout << "inserting null" <<endl;
+		cerr << "inserting null" <<endl;
 		exit(1);
 	}
-	if(what==this)
+	if(what==this && !cloned)
 	{
-		cout<<"inserting this"<<endl;
+		cerr<<"inserting this without cloning"<<endl;
 		exit(1);
 	}
 	if(what->isEmpty())
@@ -286,7 +278,6 @@ void Word::insert(Symbol* where, Word* what,bool cloned) //insert word after thi
 	}
 	if(where==this->end)
 	{
-		cout<<"end"<<endl;
 		where->next=w->getStart();
 		w->getStart()->prev=where;
 		this->end=w->getEnd();
@@ -302,12 +293,12 @@ void Word::replace(Symbol* which, Word* what, bool cloned)
 {
 	if(what==NULL)
 	{
-		cout << "inserting null" <<endl;
+		cerr << "replacing with null" <<endl;
 		exit(1);
 	}
-	if(what==this)
+	if(what==this && !cloned)
 	{
-		cout<<"inserting this"<<endl;
+		cerr<<"replacing with this without cloning"<<endl;
 		exit(1);
 	}
 	Word* w=what;
@@ -317,7 +308,7 @@ void Word::replace(Symbol* which, Word* what, bool cloned)
 	}
 	if(which==NULL)
 	{
-		cout << "inserting at null" <<endl;
+		cerr << "replacing null" <<endl;
 		exit(1);
 	}
 	if(what->isEmpty())
@@ -366,13 +357,11 @@ bool Word::equal(Word* w2)
 		return false;
 	if(w2==this)
 	{
-		//cout<<"got this"<<endl;
 		return true;
 	}
 	Symbol* s2=w2->getStart();
 	if(s2==this->start)
 	{
-		//cout<<"equal start"<<endl;
 		return true;
 	}
 	for(Symbol* s=this->start;;s=s->next)
@@ -399,13 +388,11 @@ bool Word::less(Word* w2)
 		return true;
 	if(w2==this)
 	{
-		cout<<"got this"<<endl;
 		return false;
 	}
 	Symbol* s2=w2->getStart();
 	if(s2==this->start)
 	{
-		cout<<"equal start"<<endl;
 		return false;
 	}
 	for(Symbol* s=this->start;;s=s->next)
@@ -548,18 +535,15 @@ void Word::insert(Symbol* where, Symbol* start, Symbol* end, bool cloned)
 	start->prev=NULL;
 	end->next=NULL;
 	Word* insword=new Word(start);
-	cout<<"iw: "<<insword->toString()<<endl;
 	if(cloned)
 	{
 
 		insword=insword->clone();
 		start->prev=backupstart;
 		end->next=backupend;
-		cout<<"iwc: "<<insword->toString()<<this->contains(insword->getStart())<<endl;
 
 	}
 	this->insert(where,insword);
-	cout<<"ins: "<<this->toString()<<endl;
 }
 
 bool Word::contains(Symbol* s)
