@@ -141,6 +141,11 @@ cout<<"2"<<endl;
 
     this->start = s->id;
 
+cout<<grammar.size();
+    if(grammar.size()==3)
+    {
+	return;
+    }
     stringstream rulesStream(grammar[3]);
     rule_t rule;
     rule.first = 0;
