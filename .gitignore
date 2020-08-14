@@ -33,5 +33,6 @@
 
 #
 server/algorithms_c++/tests/*
+yarn.lock
 *.swp
 */nano.save
