@@ -191,23 +191,36 @@ cout<<"rules"<<endl;
 string Grammar::grammarToString()
 {
 	stringstream sg;
+	bool dopop=false;
+
 	for(int n:this->nonterminals)
 	{
+		dopop=true;
 		Word* w=new Word(n);
 		sg<< w->toString()<<",";
 	}
 	//sg.unget();
-	sg.seekp(-1,sg.cur);
+	if(dopop)
+	{
+		sg.seekp(-1,sg.cur);
+	}
+	dopop=false;
 //cout<<sg.str()<<endl;
 	sg<<"|";
+
         for(int n:this->terminals)
         {
+		dopop=true;
                 Word* w=new Word(n);
                 sg<< w->toString()<<",";
         }
 //cout<<sg.str()<<endl;
 	//sg.unget();
-	sg.seekp(-1,sg.cur);
+	if(dopop)
+	{
+		sg.seekp(-1,sg.cur);
+	}
+	dopop=false;
 	sg<<"|";
 	Word* w=new Word(this->start);
 	sg<< w->toString()<<"|";
@@ -215,6 +228,7 @@ string Grammar::grammarToString()
 //cout<<"rules"<<endl;
 	for(auto rule:this->rules)
 	{
+		dopop=true;
 		w=new Word(rule.first);
 		sg<< w->toString()<<",";
 		sg<< rule.second->toString();
@@ -224,7 +238,10 @@ string Grammar::grammarToString()
 	//sg.unget();
 	//sg.seekp(-1,sg.cur);
 	string o=sg.str();
-	o.pop_back();
+	if(dopop)
+	{
+		o.pop_back();
+	}
 	return o;
 
 }
@@ -235,7 +252,7 @@ string Grammar::grammarToString()
 pair<bool,bool> Grammar::patchNonterminals()
 {
 	pair<bool,bool> o;
-	o.first=false; //added nonterminals
+	o.first=(this->nonterminals.insert(this->start)).second; //added nonterminals
 	o.second=false; //removed nonterminals
 	for(auto rule:this->rules)
 	{
@@ -250,6 +267,10 @@ pair<bool,bool> Grammar::patchNonterminals()
 	//
 	for(int n:this->nonterminals)
 	{
+		if(n==this->start)
+		{
+			continue;
+		}
 		bool remove=true;
 		for(auto rule:this->rules)
 		{
@@ -335,7 +356,7 @@ void Grammar::toReducedNormalForm()
 
 	//
 
-//cout<<"1";
+cout<<"1"<<this->testprint()<<endl;
 
     set<int> terminatedNonterminals;
 
@@ -364,7 +385,7 @@ void Grammar::toReducedNormalForm()
         }
     }
 
-//cout<<"2";
+cout<<"2"<<this->testprint()<<endl;
     for (auto rule : this->rules)
 
     {
@@ -394,7 +415,7 @@ void Grammar::toReducedNormalForm()
 
     terminatedNonterminals.clear();
 
-//cout<<"3";
+cout<<"3"<<this->testprint()<<endl;
     set<int> achievableNonterminals;
     achievableNonterminals.insert(this->start);
     queue<int> q;
@@ -429,7 +450,7 @@ void Grammar::toReducedNormalForm()
             }
         }
     }
-//cout<<"4";
+cout<<"4"<<this->testprint()<<endl;
     for (auto rule : this->rules)
     {
         if (achievableNonterminals.count(rule.first) == 0)

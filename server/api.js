@@ -13,6 +13,11 @@ router.post("/grammarRequest/ChomskyNormalForm", (req, res) => {
   res.send(cecko.execute("ChomskyNormalForm", grammar));
 });
 
+router.post("/grammarRequest/GreibachNormalForm", (req, res) => {
+  const { grammar } = req.body;
+  res.send(cecko.execute("GreibachNormalForm", grammar));
+});
+
 
 router.post("/grammarRequest/epsilonFreeForm", (req, res) => {
   const { grammar } = req.body;

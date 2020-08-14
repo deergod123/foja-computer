@@ -19,6 +19,10 @@ class GrammarWriter extends Component {
   };
 
   writeRules = rules => {
+	if(rules.length===0)
+	{
+		return "";
+	}
     let rulesString = "";
     let usedNonterminals = new Set();
     for (let i = 0; i < rules.length; i += 1) {

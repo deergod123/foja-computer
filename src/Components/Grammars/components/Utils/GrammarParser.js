@@ -24,6 +24,8 @@ export const stringToGrammar = stringGrammar => {
 
   if (grammar.length === 3)
     return { nonterminalsSet, terminalsSet, start, rulesSet };
+  if(grammar[3].length===0)
+    return { nonterminalsSet, terminalsSet, start, rulesSet };
 
   let rulesSetArray = grammar[3].split(",");
 

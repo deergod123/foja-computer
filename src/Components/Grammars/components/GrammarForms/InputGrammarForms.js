@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import ReducedFormButton from "./Buttons/ReducedFormButton";
 import EpsilonFreeButton from "./Buttons/EpsilonFreeButton";
 import ChomskyButton from "./Buttons/ChomskyButton";
+import GreibachButton from "./Buttons/GreibachButton";
 
 import "./InputGrammarForms.css";
 
@@ -348,7 +349,6 @@ class InputGrammarForms extends Component {
             setGrammar={this.props.setGrammar}
           />
         )}
-
         {this.state.inputMessage !== "" && <h3>{this.state.inputMessage}</h3>}
       </form>
     );

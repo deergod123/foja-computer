@@ -504,7 +504,7 @@ string Word::toString()
 				ss << "(T" << i->id << ")";
 				continue;
 			}
-			char c {96+i->id};
+			char c=static_cast<char>(96+i->id);
 			ss << c;
 			continue;
 		}
@@ -515,7 +515,7 @@ string Word::toString()
 				ss << "(N" << (i->id)*-1 <<")";
 				continue;
 			}
-			char c {64-i->id};
+			char c=static_cast<char>(64-i->id);
 			ss << c;
 		}
 	}

@@ -144,6 +144,24 @@ void Execute(const FunctionCallbackInfo<Value> &args)
 
     args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
   }
+  else if (function == "GreibachNormalForm")
+  {
+    String::Utf8Value str(isolate, args[1]);
+    string grammarString(*str);
+
+    Grammar *grammar = new Grammar(grammarString);
+   cout<<grammar->testprint()<<endl;
+
+	cout<<"running GNF"<<endl;
+    grammar->toGreibachNormalForm();
+   cout<<grammar->testprint()<<endl;
+
+    string result = grammar->grammarToString();
+    delete grammar;
+	cout<<"result: "<<result<<endl;
+
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, result.c_str()).ToLocalChecked());
+  }
 
 
   else

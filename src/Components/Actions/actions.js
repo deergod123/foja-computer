@@ -75,6 +75,22 @@ export const toReducedNormalForm = (grammar, setGrammar) => dispatch => {
     });
 };
 
+export const toGreibachNormalForm = (grammar, setGrammar) => dispatch => {
+  const data = {
+    grammar: grammar
+  };
+
+  return apiRequest(`grammarRequest/GreibachNormalForm`, {
+    method: "POST",
+    body: data
+  })
+    .then(result => {
+      dispatch(setGrammar(stringToGrammar(result)));
+    })
+    .catch(e => {
+      throw e;
+    });
+};
 export const toChomskyNormalForm = (grammar, setGrammar) => dispatch => {
   const data = {
     grammar: grammar
