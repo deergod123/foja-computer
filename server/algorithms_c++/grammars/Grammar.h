@@ -7,13 +7,6 @@ using namespace std;
 #define rule_t pair<int, Word*>
 #define ruleset_t set<rule_t, rulecomp >
 
-/*
-auto rulecomp= [](rule_t r1, rule_t r2)
-{
-        return (r1.first==r2.first) && (r1.second->equal(r2.second));
-};
-*/
-
 class PrecedentialRelation;
 
 class rulecomp
@@ -47,8 +40,6 @@ public:
   string hello() const;
   ruleset_t getRulesFromNonterminal(int nt); //returns set of rules from given N
   pair<bool,bool> patchNonterminals(); //add used and missing N, remove present and unused N, returns pair<added,removed>
-  //bool removeDupedRules(); //remove duplicate rules //deprecated, replaced by ruleset_t and rulecomp
-  //void removeLeftRecursion();
   void toChomskyNormalForm();
   void toReducedNormalForm();
   void toEpsilonFreeForm();
