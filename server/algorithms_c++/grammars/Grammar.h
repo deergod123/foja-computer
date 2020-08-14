@@ -19,8 +19,6 @@ public:
 
 class Grammar
 {
-private:
-  void printr(rule_t r); //print single rule
 protected:
   set<int> nonterminals;
   set<int> terminals;
@@ -29,6 +27,7 @@ protected:
   int minimum(queue<pair<Word*, int>> &queue);
   int minimum(wordset_t words);
   int countOfTerminals(Word* w);
+  void printr(rule_t r); //print single rule
 
 public:
   set<int> getNonterminals() const;
@@ -43,7 +42,7 @@ public:
   void toChomskyNormalForm();
   void toReducedNormalForm();
   void toEpsilonFreeForm();
-  void toGreibachNormalForm(); //TODO
+  void toGreibachNormalForm();
   string isEquivalent(Grammar* grammar);
   string grammarToString(); //returns stringGrammar
   bool isPrecedential();
