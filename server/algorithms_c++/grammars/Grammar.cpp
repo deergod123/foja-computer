@@ -1625,35 +1625,40 @@ cout<<"rmstartunit"<<endl;
 	this->toReducedNormalForm();
 cout<<"rmleftrec"<<endl;
 cout<<this->testprint();
+	
+	
 ////////remove left recursion
 	vector<int> orderednonterminals(this->nonterminals.begin(),this->nonterminals.end());
 	sort(orderednonterminals.begin(),orderednonterminals.end(),greater<int>());
 	bool bigchanged=true;
 	while(bigchanged)
 	{
+		
 		bigchanged=false;
 
 		for(int i=0;i<orderednonterminals.size();i++)
 		{
 			int n=orderednonterminals[i];
-			cout<<"-nt "<<n<<endl;
+			cout<<"-nt "<<n<<endl; //current nonterminal B
 			bool changed=true;
+			//remove indirect left recursion
 			while(changed)
 			{
 				changed=false;
 				for(auto rule:this->getRulesFromNonterminal(n))
 				{
-					if(rule.second->isEmpty() || rule.second->getStart()->id >0)
+					if(rule.second->isEmpty() || rule.second->getStart()->id >0) //rule empty or starts with terminal
 					{
 						continue;
 					}
-					if(rule.second->getStart()->id > n)
+					if(rule.second->getStart()->id > n) //rule starts with a lesser nonterminal A
 					{
 						cout<<"---lesser ";
 						this->printr(rule);
 						changed=true;
 						bigchanged=true;
-						this->rules.erase(rule);
+						this->rules.erase(rule); //erase this rule (B->Aw)
+						//replace with B->uw for each rule A->u
 						for(auto r2:this->getRulesFromNonterminal(rule.second->getStart()->id))
 						{
 							Word* w=rule.second->clone();
@@ -1668,10 +1673,10 @@ cout<<this->testprint();
 					}
 				}
 			}
-			//direct
+			//remove direct left recursion for B (B->Bw)
 			cout<<"-direct"<<endl;
-			ruleset_t leftrec;
-			ruleset_t noleftrec;
+			ruleset_t leftrec; //rules with direct left recursion
+			ruleset_t noleftrec; //all other rules
 			for(auto rule:this->getRulesFromNonterminal(n))
 			{
 				if(rule.second->getStart()->id == n)
@@ -1681,18 +1686,20 @@ cout<<this->testprint();
 				}
 				noleftrec.insert(rule);
 			}
-			if(leftrec.size()==0)
+			if(leftrec.size()==0) //B has no direct left recursion, nothing to remove
 			{
 				cout<<"-no direct left rec"<<endl;
 				continue;
 			}
 			bigchanged=true;
+			//create a new nonterminal C
 			int n2=nextnewnt;
 			this->nonterminals.insert(n2);
 			orderednonterminals.push_back(n2);
 			nextnewnt--;
 			for(auto lr:leftrec)
 			{
+				//replace each A->Aw with C->w and C->wC
 				this->rules.erase(lr);
 				Word* w=lr.second->clone();
 				w->replace(w->getStart(),new Word(),false);
@@ -1712,6 +1719,7 @@ cout<<this->testprint();
 			}
 			for(auto nlr:noleftrec)
 			{
+				//for each A->w (no left rec) add A->wC
 				Word* w=nlr.second->clone();
 				w->conc(new Word(n2),false);
 				rule_t nr;
@@ -1722,33 +1730,42 @@ cout<<this->testprint();
 				this->rules.insert(nr);
 			}
 		}
+		//all is done in a while loop to fix indirect left recursion on the first nonterminal
 
 
 	}
+	//left recursion is now removed
+	
 	//tape
 cout<<this->testprint()<<endl;
 cout<<"tape"<<endl;
-	for(auto n:this->nonterminals)
+	bool changed=true;
+	while(changed)
 	{
-		for(auto rule:this->getRulesFromNonterminal(n))
+		changed=false;
+		for(auto n:this->nonterminals)
 		{
-			if(rule.second->isEmpty() || rule.second->getStart()->id >0)
+			for(auto rule:this->getRulesFromNonterminal(n))
 			{
-				continue;
-			}
-			for(auto rr:this->getRulesFromNonterminal(rule.second->getStart()->id))
-			{
-				Word* w=rule.second->clone();
-				w->replace(w->getStart(),rr.second);
-				rule_t nr;
-				nr.first=n;
-				nr.second=w;
-				cout<<"--addrule ";
-				this->printr(nr);
-				this->rules.insert(nr);
-			}
-			this->rules.erase(rule);
+				if(rule.second->isEmpty() || rule.second->getStart()->id >0)
+				{
+					continue;
+				}
+				changed=true;
+				for(auto rr:this->getRulesFromNonterminal(rule.second->getStart()->id))
+				{
+					Word* w=rule.second->clone();
+					w->replace(w->getStart(),rr.second);
+					rule_t nr;
+					nr.first=n;
+					nr.second=w;
+					cout<<"--addrule ";
+					this->printr(nr);
+					this->rules.insert(nr);
+				}
+				this->rules.erase(rule);
 
+			}
 		}
 	}
 
