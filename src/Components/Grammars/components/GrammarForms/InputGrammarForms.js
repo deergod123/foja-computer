@@ -44,7 +44,7 @@ class InputGrammarForms extends Component {
     if (word.length >1)
     {
 
-	if(word.charAt(0)!=`(` || word.charAt(1)!=`T` || word.charAt(word.length -1) !=`)`)
+	if(word.charAt(0)!==`(` || word.charAt(1)!==`T` || word.charAt(word.length -1) !==`)`)
 		return true;
 	for(let i=2;i <= word.length-2;i++)
 	{
@@ -63,7 +63,7 @@ class InputGrammarForms extends Component {
     if (word.length === 0) return true;
     if (word.length >1)
     {
-	if(word.charAt(0)!=`(` || word.charAt(1)!=`N` || word.charAt(word.length -1) !=`)`)
+	if(word.charAt(0)!==`(` || word.charAt(1)!==`N` || word.charAt(word.length -1) !==`)`)
 		return true;
 	for(let i=2;i <= word.length-2;i++)
 	{
